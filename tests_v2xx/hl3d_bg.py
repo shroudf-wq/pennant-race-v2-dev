@@ -12,8 +12,8 @@
 #   ㉓ v2.2.i:フェンス裏型のブルペンの箱の壁がフェンス+.5(低いフェンスで 7.5)。外の地面の円が MeshBasic で絵の色(2a5534 のままでない)
 #   ㉒ v2.2.g:型を強制して scene 0/1/2 で外の景色(scenery)1・外の地面(farGround)1・月 2・星 240(夜)。屋根の影:roof 2・1 で暗い材質の区画がある、0 でない。ドームでは景色・月なし
 #   ㉑ v2.2.f:フェンスの看板(ads 1・鏡 repeat.x=−1)・リボンビジョン(外野 2 階席があれば 2、なければ 1)・バックスクリーンのビジョン(512 px の絵)。勝敗を変えて updateMatchup すると絵が描き直される(球場はそのまま)。観戦の作り(ofFull)にも看板とビジョン(リボンなし)
-#   ⑳ v2.2.c:ユニフォームの型(0〜3 を上書きして人を作る:縦縞・胸の帯は胴が絵(材質の配列)、ラグランは袖が暗い、つば別色はつばが帽子と違う色)
-#   ⑲ v2.2.b:背景の野手にユニフォーム(部品 8 つ以上・帽子が本拠地のチームカラー)
+#   ⑳ v2.2.c:ユニフォームの型(0〜3:縦縞・胸の帯は絵(tex)、ラグランは袖が暗い、つば別色はつばが帽子と違う色。v2.2.n から hl3dUniform の結果だけを見る)
+#   ⑲ v2.2.b:背景の野手にユニフォーム(v2.2.n から:全員が絵の板で、絵の帽子の所の色が本拠地のチームカラー)
 #   ⑱ v2.2.a:ブルペン(型を強制して、ファウルゾーン型は投手・捕手 8(2 レーン×両側)と箱 0、フェンス裏型は 8 と箱 2)
 #   ⑰ v2.1.z:内野席とファウルゾーンの席の内縁(hl3dBowlEdge)がひと続き(長さ 400 以上・両端はライン沿い・真ん中は本塁の後ろ)。背景の野手は .8 倍
 #   ⑯ v2.1.y:地面の絵に芝の縞の印(__stripes)・バックネットの格子 1・待つ打者 2
@@ -99,13 +99,13 @@ with sync_playwright() as p:
                 pg.evaluate("(pen)=>{ hl3dParkLook=(h,pk)=>Object.assign(hl3dParkLook0(h,pk),{pen,of:0}); hl3dBgS.key=''; updateMatchup(); }",pen); pg.wait_for_timeout(700); pr.append(pg.evaluate(PC))
             pg.evaluate("()=>{ hl3dParkLook=hl3dParkLook0; hl3dBgS.key=''; updateMatchup(); }"); pg.wait_for_timeout(700)
             ok("⑱ ブルペン", pr==[[8,0],[8,2]], pr)
-            ur=pg.evaluate("()=>{ const m=hl3dBgS.men[0], cols=new Set(); m.traverse(o=>{ if(o.isMesh) cols.add(o.material.color.getHexString()); }); return [m.children.length, cols.has(new THREE.Color(teamColorMap[hl3dBgHome()]).getHexString()), cols.has('f4f2ec')]; }")
-            ok("⑲ ユニフォーム", ur[0]>=8 and ur[1] and ur[2], ur)
-            us=pg.evaluate("""()=>{ const own=[], out=[]; for(let st=0;st<4;st++){ for(const ba of [0,1]){ const u=hl3dUniform(hl3dBgHome(),true,st,ba), m=hl3dMan(0,own,false,u); const kids=m.children.filter(c=>c.geometry);
-                const body=kids.find(c=>c.geometry.type==='CylinderGeometry'&&c.geometry.parameters.height===6), brim=kids.find(c=>c.geometry.type==='BoxGeometry'), cap=kids.find(c=>c.geometry.type==='SphereGeometry'&&c.geometry.parameters.thetaLength<2);
-                out.push([st,ba,Array.isArray(body.material),(u.sleeve!==u.trim),brim.material.color.getHex()!==cap.material.color.getHex()]); } } own.forEach(o=>{ try{ o.dispose(); }catch(e){} }); return out; }""")
+            ur=pg.evaluate("""()=>{ const m=hl3dBgS.men[0], B=m.userData.bill; if(!B) return [false]; const cv=B.pm.map.image, d=cv.getContext('2d').getImageData(63,40,1,1).data, tc=new THREE.Color(teamColorMap[hl3dBgHome()]);
+                const near=(a,b)=>Math.abs(a-b)<=6; return [true, cv.width===128 && cv.height===256, near(d[0],Math.round(tc.r*255)) && near(d[1],Math.round(tc.g*255)) && near(d[2],Math.round(tc.b*255)), hl3dBgS.men.filter(x=>x.userData.bill).length, hl3dBgS.men.length]; }""")
+            ok("⑲ ユニフォーム(v2.2.n:絵の板。帽子の所の色がチームカラー)", ur[0] and ur[1] and ur[2] and ur[3]==ur[4], ur)
+            us=pg.evaluate("""()=>{ const out=[]; for(let st=0;st<4;st++){ for(const ba of [0,1]){ const u=hl3dUniform(hl3dBgHome(),true,st,ba);
+                out.push([st,ba,!!u.tex,(u.sleeve!==u.trim),(u.brim!=null && u.brim!==u.cap)]); } } return out; }""")
             exp=[[0,0,False,False,False],[0,1,False,False,True],[1,0,True,False,False],[1,1,True,False,True],[2,0,False,True,False],[2,1,False,True,True],[3,0,True,False,False],[3,1,True,False,True]]
-            ok("⑳ ユニフォームの型", us==exp, us)
+            ok("⑳ ユニフォームの型(v2.2.n:hl3dUniform だけを見る)", us==exp, us)
             VC="()=>{ const c={ads:0,ribbon:0,vision:0,deck2:0}; let mir=null, vis=null; hl3dBgS.sc.traverse(o=>{ if(o.userData.k in c) c[o.userData.k]++; if(o.userData.k==='ads') mir=o.material.map.repeat.x; if(o.userData.k==='vision') vis=o.material.map.image; }); return [c.ads,c.ribbon,c.vision,c.deck2,mir,vis? vis.width : 0, hl3dBgS.fx.vision.j]; }"
             v0=pg.evaluate(VC)
             pg.evaluate("()=>{ const t=allTeamsEverywhere().find(x=>x.name===hl3dBgHome()); t.w+=7; updateMatchup(); }"); pg.wait_for_timeout(300); v1=pg.evaluate(VC)
