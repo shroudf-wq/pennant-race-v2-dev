@@ -1,0 +1,6 @@
+work/*/base.html
+work/*/*.out.html
+work/*/out/
+out/
+__pycache__/
+*.pyc
