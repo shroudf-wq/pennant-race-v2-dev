@@ -2206,6 +2206,10 @@ html[data-hlnm=pos] :is(#hlSvg,#mgField) .hlNames .f-runner{display:none}
 .bcvBatter path,.bcvBatter circle{fill:#e9e4d8;stroke:#1b2a22;stroke-width:1}
 .bcvBatter .bcvCap{fill:#16302a}
 .bcvBatter .bcvStick{stroke:#c99b5f;stroke-width:5;stroke-linecap:round;fill:none}
+/* bcv-figures:部品で描いた打者と投手。.bcfSw=スイング(#bcfBat に sw が付いたとき)・.bcfF0〜2=投手のコマ(#bcfPit の data-f) */
+#bcfBat .bcfSw,#bcfBat .bcfFo{display:none} #bcfBat.sw .bcfSw,#bcfBat.fo .bcfFo{display:inline} #bcfBat.sw .bcfSt,#bcfBat.fo .bcfSt,#bcfBat.fo .bcfSw{display:none}
+#bcfPit .bcfF{display:none} #bcfPit[data-f="0"] .bcfF0,#bcfPit[data-f="1"] .bcfF1,#bcfPit[data-f="2"] .bcfF2{display:inline}
+.bcfNum{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif;font-weight:800;text-anchor:middle}
 .bcvTrail{fill:none;stroke:rgba(255,255,255,.6);stroke-width:1.4;stroke-dasharray:2 2}
 .bcvBall{fill:#fff;stroke:#c33;stroke-width:.6}
 .bcvCard{position:absolute;left:6px;top:46%;background:rgba(8,18,13,.88);border:1px solid rgba(242,234,217,.3);border-radius:8px;padding:4px 8px;color:#f2ead9;min-width:84px}
@@ -3749,7 +3753,7 @@ let practiceElsewhere=false;   // v1.4.c:ほかのタブで練習中(控えを�
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.startsWith("pennant") && !k.startsWith("pennantSave") && k!=="pennantPracticeSnap") del.push(k); }
   del.forEach(k=>localStorage.removeItem(k)); Object.entries(o).forEach(([k,v])=>localStorage.setItem(k,v)); localStorage.removeItem("pennantPracticeSnap"); try{ sessionStorage.removeItem("pennantPracticeOwner"); }catch(e){} }catch(e){} })();
 /* バージョン:公開のたびに末尾の英字を1つ進める(v1.0.a → … → v1.0.z → v1.1.a) */
-const APP_VERSION="v2.2.l"; const BASE_V1="v1.8.b";   /* v2(3D版):BASE_V1 は「元にした v1 の版」。同期するたびに上げる */
+const APP_VERSION="v2.2.m"; const BASE_V1="v1.8.c";   /* v2(3D版):BASE_V1 は「元にした v1 の版」。同期するたびに上げる */
 /* 体験版の切り替え:体験版のファイルは、この行を true にして作る(本編と同じプログラム) */
 const LITE=false, LITE_SEASONS=3;
 const DEV=false;   // v1.2.p:開発版(テスト機能がいつも出ている)。開発版を作るときは true に置き換える
@@ -10930,16 +10934,165 @@ function bcvHomeSvg(){
 }
 function bcvSceneHtml(det){
   const lefty= det && det.side===1;   // v1.5.d:捕手の後ろから見るので、右打者は図の左(三塁側)・左打者は図の右
-  const batter=`<g class="bcvBatter"${lefty? "" : ` transform="translate(300,0) scale(-1,1)"`}><path d="M206,118 q14,-8 22,4 l4,28 q2,22 -4,44 l5,40 h-14 l-5,-36 l-6,36 h-14 l4,-44 q-6,-22 -2,-40 z"/>`+
-    `<circle cx="216" cy="108" r="11"/><path class="bcvCap" d="M205,102 q11,-12 24,0 v4 h-24z"/><path id="bcvBat" class="bcvStick" d="M222,130 L250,84"/></g>`;
+  const bcfC=bcfCtx(), batter=bcfBatterSvg(det,bcfC);   /* bcv-figures:部品で描いた打者(前は1本の path の人形) */
   return `<div class="bcvScene${lefty? " lefty" : ""}" id="bcvScene" aria-hidden="true"><svg viewBox="0 0 300 230" preserveAspectRatio="xMidYMid slice">`+
     `<rect class="bcvSky" width="300" height="230"/><rect class="bcvStand" y="58" width="300" height="34"/><rect class="bcvScreen" x="110" y="58" width="80" height="34"/>`+
     `<rect class="bcvGrass" y="88" width="300" height="142"/><ellipse class="bcvMound" cx="150" cy="128" rx="40" ry="8"/>`+bcvHomeSvg()+
-    `<g class="bcvPitcher"><ellipse cx="150" cy="104" rx="4" ry="5"/><rect x="146" y="108" width="8" height="12" rx="2"/></g>`+
+    bcfPitcherSvg(det,bcfC)+
     `<rect class="bcvZone" x="118" y="118" width="64" height="64"/><path class="bcvGrid" d="M139.3,118 V182 M160.7,118 V182 M118,139.3 H182 M118,160.7 H182"/>`+
     batter+`<g id="bcvMarks"></g><path id="bcvTrail" class="bcvTrail" d=""/><circle id="bcvBall" class="bcvBall" cx="157" cy="110" r="0"/></svg>`+
     `<div class="bcvCard" id="bcvCard"></div></div>`;
 }
+/* ===== bcv-figures:打席の画面の人物を部品で描く(試作。AI の絵がオフ・未読込のときの SVG の図だけ) =====
+   打者:左打者の向き(図の右に立ち、左=本塁・投手を向く)で描き、右打者は translate(300,0) scale(-1,1) で反転。番号は反転の外に置く(鏡文字にしない)。
+     胸がこちら(本塁)を向く形(ユーザーが出した横からの絵)。構えは3通り:std ふつう/kan 神主ふう/nek 寝かせ(bcfStance。能力から。乱数なし)。
+     色:ヘルメット=球団の色。ホームは白、ビジターは球団の色(球団名のハッシュで4つに1つ・明るい色の球団は灰色)。肌は似顔(FACE)の seed と同じ決め方。
+   投手:捕手から見て正面。右投げは図の左の手で投げる(左投げは反転)。セット(0)→脚上げ(1)→リリース(2)。リリースの手は bcvStart と同じ (150∓7,110)。
+   ゲームの乱数・Math.random は使わない。セーブにも何も足さない。 */
+const BCF_OUT="#16231c";
+const BCF_POSE={
+  std:{S1:[211,129],S2:[237,131],N:[220,120],hd:[219,110],H:[225,129],K:[223,137],T:[253,82],E1:[208,140],E2:[240,144],BL:[219,157],BR:[241,158],F:[[221,160],[205,185],[214,214]],B:[[238,162],[228,189],[236,221]]},
+  kan:{S1:[212,129],S2:[237,131],N:[221,120],hd:[220,109],H:[213,139],K:[214,147],T:[203,84],E1:[206,147],E2:[232,148],BL:[220,157],BR:[241,158],F:[[222,160],[215,186],[216,215]],B:[[238,162],[236,189],[236,221]]},
+  nek:{S1:[211,133],S2:[237,135],N:[220,124],hd:[220,114],H:[232,127],K:[228,133],T:[273,111],E1:[214,141],E2:[248,128],BL:[219,160],BR:[241,161],F:[[221,163],[202,187],[209,215]],B:[[239,165],[241,190],[243,221]]},
+};
+/* 打った瞬間(sw)・振り切り(fo)は背中が見える形(ユーザーが出した絵。腰が回って背中がこちらを向く)。左打者の向きの座標 */
+const BCF_BACK={
+  sw:{S1:[201,124],S2:[230,132],hd:[207,108],H:[189,143],T:[145,151],E1:[194,133],E2:[212,146],BL:[211,160],BR:[236,161],F:[[214,161],[209,188],[206,216]],B:[[233,163],[226,193],[238,219]]},
+  fo:{S1:[207,127],S2:[236,129],hd:[214,108],H:[239,115],T:[279,99],E1:[224,121],E2:[247,124],BL:[215,160],BR:[239,160],F:[[218,161],[213,188],[209,216]],B:[[236,162],[227,191],[235,219]]}
+};
+/* 構え(案A):長打が得意=寝かせ・ミートが得意=神主ふう・ほか=ふつう */
+function bcfStance(p){ try{ if(!p) return "std"; const m=+p.meet||0, w=+p.power||0;
+  if(w>=75 && w>=m+5) return "nek"; if(m>=75 && m>=w+5) return "kan"; return "std"; }catch(e){ return "std"; } }
+/* 肌:FACE の draw(seed) の最初の値(sk)と同じ数列(FACE.hash → mulberry32)。SKIN の明るいほうの色 */
+const BCF_SKIN=["#f7dcc0","#f0c9a3","#e8b991","#d9a073","#b77c52"];
+function bcfSkin(p){ try{ const seed=(p && (p.faceSeed||p.name))||""; if(!seed || typeof FACE==="undefined" || !FACE.hash) return "#e8bb93";
+  let a=FACE.hash(seed)|0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; const sk=((t^t>>>14)>>>0)/4294967296;
+  return BCF_SKIN[sk<.3?0:sk<.6?1:sk<.82?2:sk<.95?3:4]; }catch(e){ return "#e8bb93"; } }
+function bcfHex(c){ c=String(c||"").trim(); if(/^#[0-9a-f]{3}$/i.test(c)) c="#"+c.slice(1).split("").map(x=>x+x).join(""); return /^#[0-9a-f]{6}$/i.test(c)? c.toLowerCase() : "#5a6670"; }
+function bcfLum(c){ const n=parseInt(bcfHex(c).slice(1),16), f=v=>{ v/=255; return v<=.03928? v/12.92 : Math.pow((v+.055)/1.055,2.4); }; return .2126*f(n>>16&255)+.7152*f(n>>8&255)+.0722*f(n&255); }
+/* ユニフォームの色。t=球団・home=ホームか */
+function bcfUni(t,home){
+  let c="#5a6670"; try{ c=bcfHex((typeof teamColorMap!=="undefined" && t && teamColorMap[t.name]) || (t && t.color)); }catch(e){}
+  if(home) return {team:c, jer:"#f4f2ec", under:c, pants:"#ecebe4", num:c, glove:c};
+  let gray=bcfLum(c)>.45; try{ if(t && t.name && typeof forteHash==="function" && ((forteHash(String(t.name)+"ビジター")>>>3)%4)===0) gray=true; }catch(e){}
+  if(gray) return {team:c, jer:"#a9aeb3", under:c, pants:"#b4b8bc", num:c, glove:c};
+  return {team:c, jer:c, under:"#2b2f33", pants:"#d9dcde", num:bcfLum(c)>.3? "#1d2228" : "#f4f2ec", glove:"#f4f2ec"};
+}
+function bcfLimb(pts,w,col){ const d="M"+pts.map(p=>p.join(",")).join(" L");
+  return `<path d="${d}" fill="none" stroke="${BCF_OUT}" stroke-width="${w+1.6}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`; }
+function bcfBatStick(x1,y1,x2,y2){ const dx=x2-x1, dy=y2-y1, l=Math.hypot(dx,dy)||1, nx=-dy/l, ny=dx/l;
+  const p=(t,w)=>[x1+dx*t+nx*w, y1+dy*t+ny*w], q=(t,w)=>[x1+dx*t-nx*w, y1+dy*t-ny*w];
+  const a=[p(0,1.1),p(.45,1.3),p(.8,2.6),p(1,2.7),q(1,2.7),q(.8,2.6),q(.45,1.3),q(0,1.1)];
+  return `<polygon points="${a.map(v=>v[0].toFixed(1)+","+v[1].toFixed(1)).join(" ")}" fill="#d2a46a" stroke="#6b4a24" stroke-width=".7" stroke-linejoin="round"/><circle cx="${x1}" cy="${y1}" r="1.6" fill="#6b4a24"/>`; }
+/* 打者1つの姿勢(左打者の向き)。返す num は胸の番号の位置 */
+function bcfBatterFig(u,skin,pose){
+  const P=BCF_POSE[pose]||BCF_POSE.std, sw=pose==="swing", shade="rgba(20,30,25,.16)", O=BCF_OUT;
+  const {S1,S2,N,H,K,T,E1,E2,BL,BR,F,B}=P, hx=P.hd[0], hy=P.hd[1];
+  let g=`<ellipse cx="225" cy="225" rx="26" ry="3.4" fill="rgba(0,0,0,.25)"/>`;
+  const shin=(L,w)=>bcfLimb([L[1].map((v,i)=>v+(L[2][i]-v)*.45),L[2]],w,u.under);
+  const shoe=A=>`<path d="M${A[0]+4},${A[1]+1.5} l-12,.6 q-2.4,-4.4 2,-5.2 l10,0 z" fill="#15181b" stroke="${O}" stroke-width=".6"/>`;
+  const toe=A=>`<path d="M${A[0]+2},${A[1]+1} l-9,-1.5 q-1,-4 3,-4.4 l7,2 z" fill="#15181b" stroke="${O}" stroke-width=".6"/>`;
+  g+=bcfLimb(F,9,u.pants)+shin(F,7.4)+shoe(F[2]);
+  g+=bcfLimb(B,10,u.pants)+shin(B,8)+(sw? toe(B[2]) : shoe(B[2]));
+  g+=`<path d="M${B[0][0]+4},${B[0][1]+2} L${B[1][0]+4},${B[1][1]} L${B[2][0]+3},${B[2][1]-6}" fill="none" stroke="${shade}" stroke-width="3"/>`;
+  const arm=(S,E,Hh)=>bcfLimb([S,E],6.4,u.jer)+bcfLimb([E,Hh],4.6,u.under);
+  const mt=[(S1[0]+S2[0])/2,Math.min(S1[1],S2[1])-4];
+  g+=`<path d="M${S1} Q${mt} ${S2} L${S2[0]+2},${S2[1]+12} Q${BR[0]+2},${BR[1]-8} ${BR} L${BL} Q${BL[0]-6},${BL[1]-14} ${S1[0]-1},${S1[1]+10} Z" fill="${u.jer}" stroke="${O}" stroke-width="1"/>`;
+  g+=`<path d="M${S1[0]-1},${S1[1]+10} Q${BL[0]-6},${BL[1]-14} ${BL} L${BL[0]+4},${BL[1]} Q${BL[0]-1},${BL[1]-14} ${S1[0]+3},${S1[1]+6} Z" fill="${shade}"/>`;
+  g+=`<path d="M${N[0]-4},${S1[1]-1} L${N[0]+1},${S1[1]+6} L${N[0]+5},${S2[1]-2} Z" fill="${u.under}" stroke="${O}" stroke-width=".6"/>`;
+  g+=`<path d="M${N[0]+1},${S1[1]+6} L${BL[0]+(BR[0]-BL[0])*.4},${BL[1]}" stroke="rgba(20,30,25,.3)" stroke-width=".7"/>`;
+  g+=`<path d="M${BL[0]},${BL[1]-2} L${BR[0]},${BR[1]-2} L${BR[0]},${BR[1]+2.2} L${BL[0]},${BL[1]+2.2} Z" fill="#24262a"/>`;
+  g+=`<rect x="${hx-2}" y="${hy+7}" width="7" height="${N[1]-hy-4}" fill="${skin}" stroke="${O}" stroke-width=".7"/>`;
+  g+=`<path d="M${hx-7},${hy} Q${hx-8},${hy+9} ${hx-3},${hy+11} Q${hx+4},${hy+12.5} ${hx+7},${hy+5}" fill="${skin}" stroke="${O}" stroke-width=".8"/>`;
+  g+=`<path d="M${hx-7},${hy+2} l-2.2,2 l2.1,.8" fill="${skin}" stroke="${O}" stroke-width=".7" stroke-linejoin="round"/>`;
+  g+= sw? `<path d="M${hx-6.2},${hy+1.6} l2.2,.5" stroke="#1a1a1a" stroke-width="1.1" stroke-linecap="round"/>` : `<path d="M${hx-6.4},${hy+0.6} l2.2,-.4" stroke="#1a1a1a" stroke-width="1.1" stroke-linecap="round"/>`;
+  g+=`<path d="M${hx-5.5},${hy+7.5} q1.6,.8 3,0" fill="none" stroke="${O}" stroke-width=".6"/>`;
+  g+=`<path d="M${hx-8},${hy+1} Q${hx-9},${hy-12} ${hx+2},${hy-13} Q${hx+13},${hy-12} ${hx+12},${hy+2} L${hx+11},${hy+9} Q${hx+5},${hy+12} ${hx+2},${hy+7} L${hx},${hy+1} Z" fill="${u.team}" stroke="${O}" stroke-width=".9"/>`;
+  g+=`<path d="M${hx+2},${hy+7} Q${hx+1},${hy+2} ${hx+4},${hy} Q${hx+9},${hy} ${hx+11},${hy+3}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width=".9"/>`;
+  g+=`<path d="M${hx-7.5},${hy-1.5} L${hx-15},${hy+0.2} Q${hx-14},${hy+1.6} ${hx-7},${hy+1} Z" fill="${u.team}" stroke="${O}" stroke-width=".8" stroke-linejoin="round"/>`;
+  g+=`<path d="M${hx-3},${hy-9} Q${hx+3},${hy-12} ${hx+8},${hy-8}" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.4" stroke-linecap="round"/>`;
+  g+=arm(S2,E2,[H[0]+2,H[1]+3])+bcfBatStick(K[0],K[1],T[0],T[1])+arm(S1,E1,H);
+  g+=`<ellipse cx="${E1[0]}" cy="${E1[1]}" rx="3.3" ry="3" fill="#2b2f33" stroke="${O}" stroke-width=".6"/>`;
+  g+=`<circle cx="${H[0]}" cy="${H[1]}" r="3.3" fill="${u.glove}" stroke="${O}" stroke-width=".7"/><circle cx="${H[0]+2}" cy="${H[1]+3}" r="3" fill="${u.glove}" stroke="${O}" stroke-width=".7"/>`;
+  return {g, num:[BL[0]+(BR[0]-BL[0])*.72, BL[1]-6]};
+}
+/* 背中から見た打者(打った瞬間・振り切り)。番号は背中の真ん中に大きく */
+function bcfBatterBack(u,skin,pose){
+  const P=BCF_BACK[pose]||BCF_BACK.sw, fo=pose==="fo", shade="rgba(20,30,25,.16)", O=BCF_OUT;
+  const {S1,S2,H,T,E1,E2,BL,BR,F,B}=P, hx=P.hd[0], hy=P.hd[1];
+  let g=`<ellipse cx="224" cy="225" rx="26" ry="3.4" fill="rgba(0,0,0,.25)"/>`;
+  const shin=(L,w)=>bcfLimb([L[1].map((v,i)=>v+(L[2][i]-v)*.45),L[2]],w,u.under);
+  const shoe=A=>`<path d="M${A[0]+4},${A[1]+1.5} l-12,.6 q-2.4,-4.4 2,-5.2 l10,0 z" fill="#15181b" stroke="${O}" stroke-width=".6"/>`;
+  const toe=A=>`<path d="M${A[0]+2},${A[1]+1} l-9,-1.5 q-1,-4 3,-4.4 l7,2 z" fill="#15181b" stroke="${O}" stroke-width=".6"/>`;
+  g+=bcfLimb(F,9.4,u.pants)+shin(F,7.6)+shoe(F[2]);
+  g+=bcfLimb(B,10,u.pants)+shin(B,8)+toe(B[2]);
+  g+=`<path d="M${B[0][0]+4},${B[0][1]+2} L${B[1][0]+4},${B[1][1]} L${B[2][0]+3},${B[2][1]-6}" fill="none" stroke="${shade}" stroke-width="3"/>`;
+  const arm=(S,E,Hh)=>bcfLimb([S,E],6.4,u.jer)+bcfLimb([E,Hh],4.6,u.under);
+  /* 後ろの腕は胴の向こう(先に描いて胴でかくす)。振り切りは両腕とも向こう */
+  g+=arm(S2,E2,[H[0]+2,H[1]+2]);
+  if(fo) g+=arm(S1,E1,H);
+  g+=bcfBatStick(H[0]+1,H[1]+1,T[0],T[1]);
+  /* 胴(背中) */
+  const mt=[(S1[0]+S2[0])/2,Math.min(S1[1],S2[1])-3];
+  g+=`<path d="M${S1} Q${mt} ${S2} Q${S2[0]+4},${S2[1]+14} ${BR[0]},${BR[1]} L${BL} Q${BL[0]-4},${BL[1]-16} ${S1} Z" fill="${u.jer}" stroke="${O}" stroke-width="1"/>`;
+  g+=`<path d="M${BR[0]},${BR[1]} Q${S2[0]+4},${S2[1]+14} ${S2} L${S2[0]-3},${S2[1]+2} Q${S2[0]},${S2[1]+15} ${BR[0]-4},${BR[1]} Z" fill="${shade}"/>`;
+  g+=`<path d="M${BL[0]},${BL[1]-2} L${BR[0]},${BR[1]-2} L${BR[0]},${BR[1]+2.2} L${BL[0]},${BL[1]+2.2} Z" fill="#24262a"/>`;
+  /* 首とヘルメット(後ろから。耳当ては投手の側) */
+  g+=`<rect x="${hx-3}" y="${hy+7}" width="8" height="${Math.min(S1[1],S2[1])-hy-5}" fill="${skin}" stroke="${O}" stroke-width=".7"/>`;
+  g+=`<path d="M${hx-10},${hy+2} Q${hx-11},${hy-12} ${hx+1},${hy-13} Q${hx+12},${hy-12} ${hx+11},${hy+2} Q${hx+10},${hy+9} ${hx+1},${hy+9} Q${hx-8},${hy+9} ${hx-10},${hy+2} Z" fill="${u.team}" stroke="${O}" stroke-width=".9"/>`;
+  g+=`<path d="M${hx-10},${hy+1} Q${hx-14},${hy+3} ${hx-12},${hy+9} Q${hx-8},${hy+10} ${hx-6},${hy+6}" fill="${u.team}" stroke="${O}" stroke-width=".8"/>`;
+  g+=`<path d="M${hx-4},${hy-9} Q${hx+2},${hy-12} ${hx+7},${hy-8}" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.4" stroke-linecap="round"/>`;
+  /* 前の腕(打った瞬間は手前に伸びる)・手袋 */
+  if(!fo) g+=arm(S1,E1,H)+`<ellipse cx="${E1[0]}" cy="${E1[1]}" rx="3.3" ry="3" fill="#2b2f33" stroke="${O}" stroke-width=".6"/>`;
+  g+=`<circle cx="${H[0]}" cy="${H[1]}" r="3.3" fill="${u.glove}" stroke="${O}" stroke-width=".7"/><circle cx="${H[0]+2}" cy="${H[1]+2}" r="3" fill="${u.glove}" stroke="${O}" stroke-width=".7"/>`;
+  return {g, num:[(BL[0]+BR[0]+S1[0]+S2[0])/4+1, (S1[1]+BL[1])/2+6], big:true};
+}
+/* 背中の名前(英字。11/2 ユーザー「背ネームは英字で」)。名字だけを大文字で。
+   英字の名前はそのまま・外国人選手(名前に「・」)は IMP_SUR の英語・訳の表(英語)にあればそれ・日本の名字は BCF_ROMA・カナは flagRoma。分からなければ出さない */
+const BCF_ROMA=(()=>{ const m={}; "佐藤:SATO,鈴木:SUZUKI,高橋:TAKAHASHI,田中:TANAKA,渡辺:WATANABE,伊藤:ITO,山本:YAMAMOTO,中村:NAKAMURA,小林:KOBAYASHI,加藤:KATO,吉田:YOSHIDA,山田:YAMADA,佐々木:SASAKI,山口:YAMAGUCHI,松本:MATSUMOTO,井上:INOUE,木村:KIMURA,林:HAYASHI,斎藤:SAITO,清水:SHIMIZU,森:MORI,池田:IKEDA,橋本:HASHIMOTO,石川:ISHIKAWA,前田:MAEDA,藤田:FUJITA,岡田:OKADA,長谷川:HASEGAWA,村上:MURAKAMI,近藤:KONDO,阿部:ABE,太田:OTA,中島:NAKAJIMA,小川:OGAWA,大野:ONO,谷口:TANIGUCHI,西村:NISHIMURA,藤井:FUJII,福田:FUKUDA,三浦:MIURA,上田:UEDA,杉山:SUGIYAMA,増田:MASUDA,横山:YOKOYAMA,宮崎:MIYAZAKI,小野:ONO,竹内:TAKEUCHI,本田:HONDA,内田:UCHIDA,高木:TAKAGI,沢田:SAWADA,大西:ONISHI,東:AZUMA,中川:NAKAGAWA,原田:HARADA,秋山:AKIYAMA,川口:KAWAGUCHI,平野:HIRANO,千葉:CHIBA,松田:MATSUDA,和田:WADA,中野:NAKANO,原:HARA,小島:KOJIMA,菅原:SUGAWARA,酒井:SAKAI,工藤:KUDO,藤原:FUJIWARA,岩崎:IWASAKI,柴田:SHIBATA,金子:KANEKO,遠藤:ENDO,青木:AOKI,坂本:SAKAMOTO,山崎:YAMAZAKI,石井:ISHII,西田:NISHIDA,福井:FUKUI,服部:HATTORI,早川:HAYAKAWA,村田:MURATA,桜井:SAKURAI,三宅:MIYAKE,岡本:OKAMOTO,荒木:ARAKI,大塚:OTSUKA,宮本:MIYAMOTO,木下:KINOSHITA,野口:NOGUCHI,今井:IMAI,河野:KONO,後藤:GOTO,石田:ISHIDA,上野:UENO,武田:TAKEDA,篠原:SHINOHARA,新井:ARAI,森田:MORITA,松井:MATSUI,小池:KOIKE,桑原:KUWABARA,川崎:KAWASAKI,吉川:YOSHIKAWA,安田:YASUDA,望月:MOCHIZUKI,川村:KAWAMURA,星野:HOSHINO,中山:NAKAYAMA,小山:KOYAMA,矢野:YANO,相馬:SOMA,土屋:TSUCHIYA,平田:HIRATA,岸本:KISHIMOTO,黒田:KURODA,松岡:MATSUOKA,小松:KOMATSU,芳賀:HAGA,大久保:OKUBO,磯部:ISOBE,栗原:KURIHARA,米田:YONEDA,荻野:OGINO,中田:NAKATA,熊谷:KUMAGAI,中西:NAKANISHI,白石:SHIRAISHI,宮田:MIYATA,中谷:NAKATANI,大谷:OTANI,山中:YAMANAKA,田村:TAMURA,中井:NAKAI,田口:TAGUCHI,平井:HIRAI,榎本:ENOMOTO,高田:TAKADA,鈴村:SUZUMURA,川上:KAWAKAMI,坂口:SAKAGUCHI,稲垣:INAGAKI,芦田:ASHIDA,浅野:ASANO,樋口:HIGUCHI,富田:TOMITA,渡部:WATANABE,森本:MORIMOTO,小坂:KOSAKA,大石:OISHI,福島:FUKUSHIMA,井口:IGUCHI,村松:MURAMATSU,田辺:TANABE,松永:MATSUNAGA,長田:NAGATA,冨田:TOMITA,北村:KITAMURA,矢部:YABE,小野寺:ONODERA,菅野:SUGANO,広瀬:HIROSE,杉本:SUGIMOTO,三上:MIKAMI,浜田:HAMADA,堀:HORI,堀内:HORIUCHI,岸:KISHI,丸山:MARUYAMA,奥田:OKUDA,柏木:KASHIWAGI,大橋:OHASHI,松浦:MATSUURA,二宮:NINOMIYA,土井:DOI,金田:KANEDA,坂井:SAKAI,阿川:AGAWA,波多野:HATANO,梶原:KAJIWARA,藤本:FUJIMOTO,九条:KUJO,一条:ICHIJO,二階堂:NIKAIDO,四条:SHIJO,五味:GOMI,六角:ROKKAKU,七尾:NANAO,八木:YAGI,九鬼:KUKI,十文字:JUMONJI,千種:CHIGUSA,万代:MANDAI,百瀬:MOMOSE,神保:JIMBO,神谷:KAMIYA,神田:KANDA,神山:KAMIYAMA,御手洗:MITARAI,左右田:SOUDA,東海林:SHOJI,小鳥遊:TAKANASHI,八十島:YASOSHIMA,五十嵐:IGARASHI,七五三掛:SHIMEKAKE,一之瀬:ICHINOSE,三田:MITA,四谷:YOTSUYA,五島:GOTO,六本木:ROPPONGI,七海:NANAMI,八重樫:YAEGASHI,九十九:TSUKUMO,十河:SOGO,百目鬼:DOMEKI,鷲尾:WASHIO,鷹野:TAKANO,鶴田:TSURUTA,亀井:KAMEI,蝶野:CHONO,鮫島:SAMEJIMA,猿渡:SARUWATARI,鹿島:KASHIMA,馬場:BABA,牛島:USHIJIMA,犬飼:INUKAI,猫田:NEKOTA,鳥居:TORII,魚住:UOZUMI,貝原:KAIBARA,砂川:SUNAGAWA,石橋:ISHIBASHI,岩井:IWAI,山岸:YAMAGISHI,川島:KAWASHIMA,谷川:TANIGAWA,峰岸:MINEGISHI,峰村:MINEMURA,嶋田:SHIMADA,崎山:SAKIYAMA,磯貝:ISOGAI,浦野:URANO,灘:NADA,潮田:USHIODA,瀬戸:SETO,湖山:KOYAMA,沼田:NUMATA,畑中:HATANAKA,畠山:HATAKEYAMA,稲田:INADA,粟田:AWATA,麻生:ASO,綿貫:WATANUKI,絹川:KINUGAWA,糸井:ITOI,布施:FUSE,縄田:NAWATA,綱島:TSUNASHIMA,網野:AMINO,弦巻:TSURUMAKI,琴平:KOTOHIRA,笛木:FUEKI,笹本:SASAMOTO,竹田:TAKEDA,桜田:SAKURADA,梅田:UMEDA,桃井:MOMOI,柿沼:KAKINUMA,栗田:KURITA,椎名:SHIINA,桐野:KIRINO,杉田:SUGITA,楠木:KUSUNOKI,竹村:TAKEMURA,森山:MORIYAMA,林田:HAYASHIDA,苗村:NAEMURA,芝田:SHIBATA,草間:KUSAMA,花田:HANADA,菊池:KIKUCHI,桐生:KIRYU,梶浦:KAJIURA,椋木:MUKUNOKI,榊原:SAKAKIBARA,柏原:KASHIWABARA,桑田:KUWATA,楢崎:NARASAKI,檜山:HIYAMA,柳田:YANAGITA,桂:KATSURA,柚木:YUNOKI,梨田:NASHIDA,橘:TACHIBANA,杏野:ANNO,桃山:MOMOYAMA,梅原:UMEHARA,柳沢:YANAGISAWA,桐山:KIRIYAMA,森下:MORISHITA,江口:EGUCHI,川辺:KAWABE,滝沢:TAKIZAWA,滝口:TAKIGUCHI,滝田:TAKITA,泉:IZUMI,岩本:IWAMOTO,岩田:IWATA,岩沢:IWASAWA,岩瀬:IWASE,石丸:ISHIMARU,石垣:ISHIGAKI,石塚:ISHIZUKA,石渡:ISHIWATA,石岡:ISHIOKA,石岩:ISHIIWA,立花:TACHIBANA,立石:TATEISHI,立川:TACHIKAWA,立野:TATENO,風間:KAZAMA,嵐:ARASHI,雨宮:AMAMIYA,雪村:YUKIMURA,霧島:KIRISHIMA,霜田:SHIMODA,露木:TSUYUKI,雲井:KUMOI,天野:AMANO,地引:JIBIKI,海老原:EBIHARA,海野:UNNO,川端:KAWABATA,川原:KAWAHARA,浜口:HAMAGUCHI,浜辺:HAMABE,浦上:URAKAMI,浦田:URATA,洲崎:SUSAKI,洲本:SUMOTO,沖田:OKITA,沖本:OKIMOTO,塩田:SHIODA,塩野:SHIONO,塩見:SHIOMI,波多:HATA,波田:HATA,汐見:SHIOMI,汐田:SHIODA,潮見:SHIOMI,高野:TAKANO,高杉:TAKASUGI,高瀬:TAKASE,高城:TAKAGI,高倉:TAKAKURA,高柳:TAKAYANAGI,高村:TAKAMURA,高沢:TAKAZAWA,高森:TAKAMORI,高梨:TAKANASHI,戸田:TODA,戸塚:TOTSUKA,戸川:TOGAWA,宇野:UNO,宇都宮:UTSUNOMIYA,宇田:UDA,宇佐美:USAMI,堂本:DOMOTO,堂園:DOZONO,堂垣:DOGAKI,辻:TSUJI,辻本:TSUJIMOTO,辻村:TSUJIMURA,辻井:TSUJII,辻川:TSUJIKAWA,門田:KADOTA,門脇:KADOWAKI,門馬:MOMMA,門元:KADOMOTO,門井:KADOI".split(",").forEach(x=>{ const i=x.indexOf(":"); if(i>0) m[x.slice(0,i)]=x.slice(i+1); }); return m; })();
+function bcfBackName(p){
+  try{ if(!p || !p.name) return ""; const nm=String(p.name).trim(), asc=v=>/^[\x20-\x7e]+$/.test(v), last=t=>String(t).trim().split(/[\s.]+/).filter(Boolean).pop()||"";
+    let r="";
+    if(asc(nm)) r=last(nm);
+    else if(p.imp && p.imp.en && asc(String(p.imp.en))) r=last(p.imp.en);
+    else { let en=""; try{ const P=I18N.packs.en, v=P && P.exact.get(nm); if(v && asc(v)) en=v; }catch(e){}
+      if(en) r=last(en);
+      else if(nm.includes("・")){ const k=nm.split("・").pop(); let f=null; try{ f=IMP_SUR.find(x=>x[0]===k); }catch(e){} r= f? f[1] : (flagRoma(k)||""); }
+      else { const sur=nm.split(/[\s\u3000]+/)[0]; r=BCF_ROMA[sur] || flagRoma(sur) || ""; } }
+    r=String(r).toUpperCase().replace(/[^A-Z\-]/g,""); return r.slice(0,12);
+  }catch(e){ return ""; } }
+/* いまの打席の打者・投手・球団(baCtx。hlRenderCount から)。分からないときは null */
+function bcfCtx(){ try{ if(typeof baCtx==="undefined" || !baCtx || !baCtx.r || !baCtx.ev) return null; const {r,ev}=baCtx, top=ev.half==="表";
+  return {B:bczPl(r,ev.batter), P:bczPl(r,ev.pitcher), bt: top? r.awayTeam : r.homeTeam, pt: top? r.homeTeam : r.awayTeam, bHome:!top}; }catch(e){ return null; } }
+function bcfBatterSvg(det,c){
+  const lefty= det && det.side===1, B=c && c.B, u=bcfUni(c && c.bt, c? c.bHome : true), skin=bcfSkin(B), st=bcfStance(B);
+  const no=(B && B.no!=null && B.no!=="" && isFinite(+B.no))? String(Math.floor(+B.no)) : "", bn=bcfBackName(B);
+  const one=(pose,cls)=>{ const f= pose==="sw"||pose==="fo"? bcfBatterBack(u,skin,pose) : bcfBatterFig(u,skin,pose), mx= lefty? f.num[0] : 300-f.num[0];
+    const txt= no? `<text class="bcfNum" x="${mx.toFixed(1)}" y="${f.num[1].toFixed(1)}" font-size="${f.big? 15 : 8}" fill="${u.num}" stroke="${BCF_OUT}" stroke-width="${f.big? .5 : .35}">${no}</text>` : "";
+    const nmT= f.big && bn? `<text class="bcfNum" x="${mx.toFixed(1)}" y="${(f.num[1]-11.5).toFixed(1)}" font-size="5.2" letter-spacing=".4" fill="${u.num}"${bn.length>7? ` textLength="25" lengthAdjust="spacingAndGlyphs"` : ""}>${bn}</text>` : "";
+    return `<g class="${cls}">`+(lefty? `<g>${f.g}</g>` : `<g transform="translate(300,0) scale(-1,1)">${f.g}</g>`)+txt+nmT+`</g>`; };
+  return `<g id="bcfBat" class="bcfBatter" data-st="${st}">`+one(st,"bcfSt")+one("sw","bcfSw")+one("fo","bcfFo")+`</g>`;
+}
+/* 投手(3コマを重ねて持ち、data-f で1つだけ見せる)。線の太さは打者の 0.42 倍 */
+function bcfPitcherSvg(det,c){
+  const P=c && c.P, u=bcfUni(c && c.pt, c? !c.bHome : false), skin=bcfSkin(P), O=BCF_OUT, lp=!!(P && P.throws==="左");
+  const L=(p,w,col)=>bcfLimb(p,w,col).replace(/stroke-width="([\d.]+)"/g,(m,v)=>`stroke-width="${(+v*.42).toFixed(2)}"`);
+  const frame=f=>{ let g=""; const hy= f===2? 101.5 : 99.5, by= f===2? 105 : 103;
+    if(f===0) g+=L([[148,113],[147,119],[147,125.5]],5,u.pants)+L([[152,113],[153,119],[153,125.5]],5,u.pants);
+    if(f===1) g+=L([[148,113],[148,119],[148,125.5]],5,u.pants)+L([[152,113],[156,109.5],[155,116]],5,u.pants);
+    if(f===2) g+=L([[147.5,114],[144,120],[143,125.5]],5,u.pants)+L([[152.5,114],[158,119],[159,125.5]],5,u.pants);
+    g+=`<ellipse cx="150" cy="126.2" rx="7" ry="1" fill="rgba(0,0,0,.25)"/>`;
+    g+=`<path d="M145.5,${by} Q150,${by-1.6} 154.5,${by} L154,${by+10} Q150,${by+11.5} 146,${by+10} Z" fill="${u.jer}" stroke="${O}" stroke-width=".5"/>`;
+    g+=`<rect x="146" y="${by+8.6}" width="8" height="1.3" fill="#2a2a2a"/>`;
+    if(f===0) g+=L([[146,by+1.5],[146,by+5],[149,by+5.5]],2.6,u.jer)+L([[154,by+1.5],[154,by+5],[151,by+5.5]],2.6,u.jer)+`<circle cx="150.3" cy="${by+5.6}" r="1.9" fill="#4a3220"/>`;
+    if(f===1) g+=L([[146,by+1.5],[146.5,by+3.5],[149,by+1]],2.6,u.jer)+L([[154,by+1.5],[154,by+3.5],[151,by+1]],2.6,u.jer)+`<circle cx="150.3" cy="${by+0.6}" r="1.9" fill="#4a3220"/>`;
+    if(f===2) g+=L([[146,by+1.5],[143.5,by+3],[143,by+5]],2.6,u.jer)+`<circle cx="143" cy="${by+5}" r="1.1" fill="${skin}"/>`+L([[154,by+1.5],[156.5,by+4],[155,by+7]],2.6,u.jer)+`<circle cx="155" cy="${by+7}" r="1.9" fill="#4a3220"/>`;
+    g+=`<circle cx="150" cy="${hy}" r="3.1" fill="${skin}" stroke="${O}" stroke-width=".45"/>`;
+    g+=`<path d="M146.8,${hy-0.6} Q147,${hy-4.4} 150,${hy-4.4} Q153,${hy-4.4} 153.2,${hy-0.6} Z" fill="${u.team}" stroke="${O}" stroke-width=".4"/><path d="M146.5,${hy-0.5} L153.5,${hy-0.5} L152.5,${hy+0.7} L147.5,${hy+0.7} Z" fill="${u.team}" stroke="${O}" stroke-width=".35"/>`;
+    return `<g class="bcfF bcfF${f}">${g}</g>`; };
+  return `<g id="bcfPit" class="bcfPitcher" data-f="0"${lp? ` transform="translate(300,0) scale(-1,1)"` : ""}>`+frame(0)+frame(1)+frame(2)+`</g>`;
+}
+function bcfPf(f){ try{ const g=document.getElementById("bcfPit"); if(g) g.setAttribute("data-f",String(f)); }catch(e){} }
 function bcvMarksHtml(det,upto){
   let g=""; const pos=[];
   det.p.slice(0,upto).forEach((q,i)=>{ let x=bcvX(q.x), y=bcvY(q.y);
@@ -28611,6 +28764,18 @@ function baBroken(){ try{ const sc=document.getElementById("bcvScene"); if(!sc |
   if(baLastDet) sc.outerHTML=baOrigScene(baLastDet); }catch(e){} }
 // 球が出るところ(bcvThrow から。絵の打席では投手の手、今の図では今までどおり)
 function bcvStart(dir){ const sc=document.getElementById("bcvScene"); if(sc && sc.dataset.sx) return [+sc.dataset.sx-(+sc.dataset.sd)*dir, +sc.dataset.sy]; return [150-7*dir,110]; }
+{ const o=bcvThrow; bcvThrow=function(det,k,dir,dur,then){
+    try{ if(document.getElementById("bcfPit")){ bcfPf(2); hlLater(()=>bcfPf(0), Math.min(.4,dur*.8));
+        const q=det && det.p[k-1];
+        if(q && (q.t==="w" || q.t==="f" || q.t==="x")){ const cl=(a,r)=>{ const b=document.getElementById("bcfBat"); if(!b) return; if(r) b.classList.remove(r); if(a) b.classList.add(a); };
+          hlLater(()=>cl("sw"), dur*.85); hlLater(()=>cl("fo","sw"), dur*.85+.1);
+          if(q.t!=="x") hlLater(()=>cl(null,"fo"), dur+.2); } } }catch(e){}
+    return o.apply(this,arguments); }; }
+{ const o=hlRenderCount; hlRenderCount=function(r,ev,done){
+    const res=o.apply(this,arguments);
+    try{ if(document.getElementById("bcfPit")){ const bc=bcOfEv(ev); if(bc){ const s=HL_SPD[HLO.speed]||HL_SPD.normal, iv=BCV_IV[HLO.speed]||1.2, first=Math.max(.5,s.pre*.5), n=bc.seq.length-1;
+        for(let k=1;k<=n+1;k++) hlLater(()=>bcfPf(1), Math.max(0,first+(k-1)*iv-.24)); } } }catch(e){}
+    return res; }; }
 let baOrigScene=null;
 { const o=bcvSceneHtml; baOrigScene=o; bcvSceneHtml=function(det){
     try{ const S=baScene(det);
