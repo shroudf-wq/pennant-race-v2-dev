@@ -15,7 +15,7 @@ def rep(a, b):
 rep(".bcvBatter .bcvStick{stroke:#c99b5f;stroke-width:5;stroke-linecap:round;fill:none}\n",
     ".bcvBatter .bcvStick{stroke:#c99b5f;stroke-width:5;stroke-linecap:round;fill:none}\n"
     "/* bcv-figures:部品で描いた打者と投手。.bcfSw=スイング(#bcfBat に sw が付いたとき)・.bcfF0〜2=投手のコマ(#bcfPit の data-f) */\n"
-    "#bcfBat .bcfSw{display:none} #bcfBat.sw .bcfSw{display:inline} #bcfBat.sw .bcfSt{display:none}\n"
+    "#bcfBat .bcfSw,#bcfBat .bcfFo{display:none} #bcfBat.sw .bcfSw,#bcfBat.fo .bcfFo{display:inline} #bcfBat.sw .bcfSt,#bcfBat.fo .bcfSt,#bcfBat.fo .bcfSw{display:none}\n"
     "#bcfPit .bcfF{display:none} #bcfPit[data-f=\"0\"] .bcfF0,#bcfPit[data-f=\"1\"] .bcfF1,#bcfPit[data-f=\"2\"] .bcfF2{display:inline}\n"
     ".bcfNum{font-family:\"Arial Narrow\",\"Roboto Condensed\",Arial,sans-serif;font-weight:800;text-anchor:middle}\n")
 
@@ -31,7 +31,11 @@ const BCF_POSE={
   std:{S1:[211,129],S2:[237,131],N:[220,120],hd:[219,110],H:[225,129],K:[223,137],T:[253,82],E1:[208,140],E2:[240,144],BL:[219,157],BR:[241,158],F:[[221,160],[205,185],[214,214]],B:[[238,162],[228,189],[236,221]]},
   kan:{S1:[212,129],S2:[237,131],N:[221,120],hd:[220,109],H:[213,139],K:[214,147],T:[203,84],E1:[206,147],E2:[232,148],BL:[220,157],BR:[241,158],F:[[222,160],[215,186],[216,215]],B:[[238,162],[236,189],[236,221]]},
   nek:{S1:[211,133],S2:[237,135],N:[220,124],hd:[220,114],H:[232,127],K:[228,133],T:[273,111],E1:[214,141],E2:[248,128],BL:[219,160],BR:[241,161],F:[[221,163],[202,187],[209,215]],B:[[239,165],[241,190],[243,221]]},
-  swing:{S1:[213,128],S2:[235,130],N:[222,118],hd:[219,110],H:[204,146],K:[204,146],T:[152,150],E1:[207,137],E2:[227,148],BL:[217,157],BR:[238,158],F:[[219,159],[212,185],[209,213]],B:[[236,161],[229,190],[236,220]]}
+};
+/* 打った瞬間(sw)・振り切り(fo)は背中が見える形(ユーザーが出した絵。腰が回って背中がこちらを向く)。左打者の向きの座標 */
+const BCF_BACK={
+  sw:{S1:[201,124],S2:[230,132],hd:[207,108],H:[189,143],T:[145,151],E1:[194,133],E2:[212,146],BL:[211,160],BR:[236,161],F:[[214,161],[209,188],[206,216]],B:[[233,163],[226,193],[238,219]]},
+  fo:{S1:[207,127],S2:[236,129],hd:[214,108],H:[239,115],T:[279,99],E1:[224,121],E2:[247,124],BL:[215,160],BR:[239,160],F:[[218,161],[213,188],[209,216]],B:[[236,162],[227,191],[235,219]]}
 };
 /* 構え(案A):長打が得意=寝かせ・ミートが得意=神主ふう・ほか=ふつう */
 function bcfStance(p){ try{ if(!p) return "std"; const m=+p.meet||0, w=+p.power||0;
@@ -89,16 +93,47 @@ function bcfBatterFig(u,skin,pose){
   g+=`<circle cx="${H[0]}" cy="${H[1]}" r="3.3" fill="${u.glove}" stroke="${O}" stroke-width=".7"/><circle cx="${H[0]+2}" cy="${H[1]+3}" r="3" fill="${u.glove}" stroke="${O}" stroke-width=".7"/>`;
   return {g, num:[BL[0]+(BR[0]-BL[0])*.72, BL[1]-6]};
 }
+/* 背中から見た打者(打った瞬間・振り切り)。番号は背中の真ん中に大きく */
+function bcfBatterBack(u,skin,pose){
+  const P=BCF_BACK[pose]||BCF_BACK.sw, fo=pose==="fo", shade="rgba(20,30,25,.16)", O=BCF_OUT;
+  const {S1,S2,H,T,E1,E2,BL,BR,F,B}=P, hx=P.hd[0], hy=P.hd[1];
+  let g=`<ellipse cx="224" cy="225" rx="26" ry="3.4" fill="rgba(0,0,0,.25)"/>`;
+  const shin=(L,w)=>bcfLimb([L[1].map((v,i)=>v+(L[2][i]-v)*.45),L[2]],w,u.under);
+  const shoe=A=>`<path d="M${A[0]+4},${A[1]+1.5} l-12,.6 q-2.4,-4.4 2,-5.2 l10,0 z" fill="#15181b" stroke="${O}" stroke-width=".6"/>`;
+  const toe=A=>`<path d="M${A[0]+2},${A[1]+1} l-9,-1.5 q-1,-4 3,-4.4 l7,2 z" fill="#15181b" stroke="${O}" stroke-width=".6"/>`;
+  g+=bcfLimb(F,9.4,u.pants)+shin(F,7.6)+shoe(F[2]);
+  g+=bcfLimb(B,10,u.pants)+shin(B,8)+toe(B[2]);
+  g+=`<path d="M${B[0][0]+4},${B[0][1]+2} L${B[1][0]+4},${B[1][1]} L${B[2][0]+3},${B[2][1]-6}" fill="none" stroke="${shade}" stroke-width="3"/>`;
+  const arm=(S,E,Hh)=>bcfLimb([S,E],6.4,u.jer)+bcfLimb([E,Hh],4.6,u.under);
+  /* 後ろの腕は胴の向こう(先に描いて胴でかくす)。振り切りは両腕とも向こう */
+  g+=arm(S2,E2,[H[0]+2,H[1]+2]);
+  if(fo) g+=arm(S1,E1,H);
+  g+=bcfBatStick(H[0]+1,H[1]+1,T[0],T[1]);
+  /* 胴(背中) */
+  const mt=[(S1[0]+S2[0])/2,Math.min(S1[1],S2[1])-3];
+  g+=`<path d="M${S1} Q${mt} ${S2} Q${S2[0]+4},${S2[1]+14} ${BR[0]},${BR[1]} L${BL} Q${BL[0]-4},${BL[1]-16} ${S1} Z" fill="${u.jer}" stroke="${O}" stroke-width="1"/>`;
+  g+=`<path d="M${BR[0]},${BR[1]} Q${S2[0]+4},${S2[1]+14} ${S2} L${S2[0]-3},${S2[1]+2} Q${S2[0]},${S2[1]+15} ${BR[0]-4},${BR[1]} Z" fill="${shade}"/>`;
+  g+=`<path d="M${BL[0]},${BL[1]-2} L${BR[0]},${BR[1]-2} L${BR[0]},${BR[1]+2.2} L${BL[0]},${BL[1]+2.2} Z" fill="#24262a"/>`;
+  /* 首とヘルメット(後ろから。耳当ては投手の側) */
+  g+=`<rect x="${hx-3}" y="${hy+7}" width="8" height="${Math.min(S1[1],S2[1])-hy-5}" fill="${skin}" stroke="${O}" stroke-width=".7"/>`;
+  g+=`<path d="M${hx-10},${hy+2} Q${hx-11},${hy-12} ${hx+1},${hy-13} Q${hx+12},${hy-12} ${hx+11},${hy+2} Q${hx+10},${hy+9} ${hx+1},${hy+9} Q${hx-8},${hy+9} ${hx-10},${hy+2} Z" fill="${u.team}" stroke="${O}" stroke-width=".9"/>`;
+  g+=`<path d="M${hx-10},${hy+1} Q${hx-14},${hy+3} ${hx-12},${hy+9} Q${hx-8},${hy+10} ${hx-6},${hy+6}" fill="${u.team}" stroke="${O}" stroke-width=".8"/>`;
+  g+=`<path d="M${hx-4},${hy-9} Q${hx+2},${hy-12} ${hx+7},${hy-8}" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.4" stroke-linecap="round"/>`;
+  /* 前の腕(打った瞬間は手前に伸びる)・手袋 */
+  if(!fo) g+=arm(S1,E1,H)+`<ellipse cx="${E1[0]}" cy="${E1[1]}" rx="3.3" ry="3" fill="#2b2f33" stroke="${O}" stroke-width=".6"/>`;
+  g+=`<circle cx="${H[0]}" cy="${H[1]}" r="3.3" fill="${u.glove}" stroke="${O}" stroke-width=".7"/><circle cx="${H[0]+2}" cy="${H[1]+2}" r="3" fill="${u.glove}" stroke="${O}" stroke-width=".7"/>`;
+  return {g, num:[(BL[0]+BR[0]+S1[0]+S2[0])/4+1, (S1[1]+BL[1])/2+6], big:true};
+}
 /* いまの打席の打者・投手・球団(baCtx。hlRenderCount から)。分からないときは null */
 function bcfCtx(){ try{ if(typeof baCtx==="undefined" || !baCtx || !baCtx.r || !baCtx.ev) return null; const {r,ev}=baCtx, top=ev.half==="表";
   return {B:bczPl(r,ev.batter), P:bczPl(r,ev.pitcher), bt: top? r.awayTeam : r.homeTeam, pt: top? r.homeTeam : r.awayTeam, bHome:!top}; }catch(e){ return null; } }
 function bcfBatterSvg(det,c){
   const lefty= det && det.side===1, B=c && c.B, u=bcfUni(c && c.bt, c? c.bHome : true), skin=bcfSkin(B), st=bcfStance(B);
   const no=(B && B.no!=null && B.no!=="" && isFinite(+B.no))? String(Math.floor(+B.no)) : "";
-  const one=(pose,cls)=>{ const f=bcfBatterFig(u,skin,pose), mx= lefty? f.num[0] : 300-f.num[0];
-    const txt= no? `<text class="bcfNum" x="${mx.toFixed(1)}" y="${f.num[1]}" font-size="8" fill="${u.num}" stroke="${BCF_OUT}" stroke-width=".35">${no}</text>` : "";
+  const one=(pose,cls)=>{ const f= pose==="sw"||pose==="fo"? bcfBatterBack(u,skin,pose) : bcfBatterFig(u,skin,pose), mx= lefty? f.num[0] : 300-f.num[0];
+    const txt= no? `<text class="bcfNum" x="${mx.toFixed(1)}" y="${f.num[1].toFixed(1)}" font-size="${f.big? 15 : 8}" fill="${u.num}" stroke="${BCF_OUT}" stroke-width="${f.big? .5 : .35}">${no}</text>` : "";
     return `<g class="${cls}">`+(lefty? `<g>${f.g}</g>` : `<g transform="translate(300,0) scale(-1,1)">${f.g}</g>`)+txt+`</g>`; };
-  return `<g id="bcfBat" class="bcfBatter" data-st="${st}">`+one(st,"bcfSt")+one("swing","bcfSw")+`</g>`;
+  return `<g id="bcfBat" class="bcfBatter" data-st="${st}">`+one(st,"bcfSt")+one("sw","bcfSw")+one("fo","bcfFo")+`</g>`;
 }
 /* 投手(3コマを重ねて持ち、data-f で1つだけ見せる)。線の太さは打者の 0.42 倍 */
 function bcfPitcherSvg(det,c){
@@ -136,8 +171,9 @@ rep("let baOrigScene=null;\n",
     '''{ const o=bcvThrow; bcvThrow=function(det,k,dir,dur,then){
     try{ if(document.getElementById("bcfPit")){ bcfPf(2); hlLater(()=>bcfPf(0), Math.min(.4,dur*.8));
         const q=det && det.p[k-1];
-        if(q && (q.t==="w" || q.t==="f" || q.t==="x")){ hlLater(()=>{ const b=document.getElementById("bcfBat"); if(b) b.classList.add("sw"); }, dur*.85);
-          if(q.t!=="x") hlLater(()=>{ const b=document.getElementById("bcfBat"); if(b) b.classList.remove("sw"); }, dur+.04); } } }catch(e){}
+        if(q && (q.t==="w" || q.t==="f" || q.t==="x")){ const cl=(a,r)=>{ const b=document.getElementById("bcfBat"); if(!b) return; if(r) b.classList.remove(r); if(a) b.classList.add(a); };
+          hlLater(()=>cl("sw"), dur*.85); hlLater(()=>cl("fo","sw"), dur*.85+.1);
+          if(q.t!=="x") hlLater(()=>cl(null,"fo"), dur+.2); } } }catch(e){}
     return o.apply(this,arguments); }; }
 { const o=hlRenderCount; hlRenderCount=function(r,ev,done){
     const res=o.apply(this,arguments);

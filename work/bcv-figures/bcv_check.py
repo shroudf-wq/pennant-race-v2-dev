@@ -27,7 +27,7 @@ FIND = """([lb,sw,home])=>{ for(let g=0; g<160 && gameIdx<schedule.length; g++){
 # 10ms ごとに、投手のコマ・スイング・印・球の大きさを記録する
 LOG = """()=>{ window.__log=[]; const t0=performance.now(); window.__lt=setInterval(()=>{ const sc=document.getElementById("bcvScene");
     const p=document.getElementById("bcfPit"), b=document.getElementById("bcfBat"), m=document.getElementById("bcvMarks"), ball=document.getElementById("bcvBall");
-    __log.push([Math.round(performance.now()-t0), !!sc, p? p.getAttribute("data-f") : null, b? b.classList.contains("sw") : null, m? m.children.length : -1, ball? +ball.getAttribute("r") : -1, ball? [+ball.getAttribute("cx"),+ball.getAttribute("cy")] : null]); },10); }"""
+    __log.push([Math.round(performance.now()-t0), !!sc, p? p.getAttribute("data-f") : null, b? (b.classList.contains("sw")? "sw" : b.classList.contains("fo")? "fo" : "") : null, m? m.children.length : -1, ball? +ball.getAttribute("r") : -1, ball? [+ball.getAttribute("cx"),+ball.getAttribute("cy")] : null]); },10); }"""
 def wait_scene(pg, ms=8000):
     for _ in range(ms // 50):
         if pg.evaluate("()=>!!document.getElementById('bcvScene')"): return True
@@ -82,7 +82,7 @@ with sync_playwright() as p:
     if I:
         ok("1-2 前の人形(.bcvBatter・.bcvPitcher・#bcvBat)が無く、部品の打者と投手がある", I["bat"] and I["pit"] and not I["old"], I)
         ok("1-3 右打者は図の左(lefty でない)", not I["lefty"])
-        ok("1-4 胸の番号=その選手の背番号(構えとスイングの2つ)", I["no"] is not None and I["nums"] == [str(I["no"])] * 2, (I["no"], I["nums"]))
+        ok("1-4 番号=その選手の背番号(構えの胸・打った瞬間と振り切りの背中の3つ)", I["no"] is not None and I["nums"] == [str(I["no"])] * 3, (I["no"], I["nums"]))
         ok("1-5 番号は反転の外(鏡文字にならない。CTM の a>0)", not I["mirrored"] and all(a > 0 for a in I["ctm"]), I["ctm"])
         ok("1-6 ヘルメットは打者の球団の色・ホームは白のユニフォーム", I["teamC"] in I["helmet"] and I["uni"]["jer"] == "#f4f2ec", (I["teamC"], I["helmet"][:8]))
         ok("1-7 投手の帽子は投手の球団の色", I["pitC"] in I["pitHelmet"], (I["pitC"], I["pitHelmet"]))
@@ -92,7 +92,8 @@ with sync_playwright() as p:
         fs = [x[2] for x in logN if x[2] is not None]
         seq = [fs[0]] + [b for a, b in zip(fs, fs[1:]) if a != b] if fs else []
         ok("1-11 投手が セット→脚上げ→リリース→セット と動く", "0" in seq and "1" in seq and "2" in seq and any(seq[i:i+3] == ["1", "2", "0"] for i in range(len(seq))), seq[:12])
-        ok("1-12 振る球でスイングの姿勢になる", any(x[3] for x in logN), "")
+        ss = [x[3] for x in logN if x[3] is not None]; ch = [ss[0]] + [b for a, b in zip(ss, ss[1:]) if a != b] if ss else []
+        ok("1-12 振る球で 構え→打った瞬間(背中)→振り切り→構え と変わる", any(ch[i:i+4] == ["", "sw", "fo", ""] for i in range(len(ch))), ch[:12])
         rel = [x for i, x in enumerate(logN) if i and x[2] == "2" and logN[i-1][2] != "2"]
         ball0 = [x for i, x in enumerate(logN) if i and x[5] > 0 and logN[i-1][5] <= 0]
         ok("1-13 リリースのコマが、球が出るのと同じころ(±60ms)", rel and ball0 and abs(rel[0][0] - ball0[0][0]) <= 60, (rel[:1], ball0[:1]))
@@ -121,7 +122,7 @@ with sync_playwright() as p:
     ok("3-1 左打者・ビジターの打席が出る", f and I, f)
     if I:
         ok("3-2 左打者は図の右(lefty)・番号は反転しない", I["lefty"] and not I["mirrored"] and all(a > 0 for a in I["ctm"]), I)
-        ok("3-3 番号=その選手の背番号", I["nums"] == [str(I["no"])] * 2, (I["no"], I["nums"]))
+        ok("3-3 番号=その選手の背番号", I["nums"] == [str(I["no"])] * 3, (I["no"], I["nums"]))
         u = I["uni"]
         ok("3-4 ビジターは球団の色か灰色(白ではない)", u["jer"] != "#f4f2ec" and (u["jer"] == I["teamC"] or u["jer"] == "#a9aeb3"), u)
         ok("3-5 エラーなし", not pg.errs, pg.errs[:2])
