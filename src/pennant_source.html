@@ -3774,7 +3774,7 @@ let practiceElsewhere=false;   // v1.4.c:ほかのタブで練習中(控えを�
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.startsWith("pennant") && !k.startsWith("pennantSave") && k!=="pennantPracticeSnap") del.push(k); }
   del.forEach(k=>localStorage.removeItem(k)); Object.entries(o).forEach(([k,v])=>localStorage.setItem(k,v)); localStorage.removeItem("pennantPracticeSnap"); try{ sessionStorage.removeItem("pennantPracticeOwner"); }catch(e){} }catch(e){} })();
 /* バージョン:公開のたびに末尾の英字を1つ進める(v1.0.a → … → v1.0.z → v1.1.a) */
-const APP_VERSION="v2.2.o"; const BASE_V1="v1.8.e";   /* v2(3D版):BASE_V1 は「元にした v1 の版」。同期するたびに上げる */
+const APP_VERSION="v2.2.p"; const BASE_V1="v1.8.e";   /* v2(3D版):BASE_V1 は「元にした v1 の版」。同期するたびに上げる */
 /* 体験版の切り替え:体験版のファイルは、この行を true にして作る(本編と同じプログラム) */
 const LITE=false, LITE_SEASONS=3;
 const DEV=false;   // v1.2.p:開発版(テスト機能がいつも出ている)。開発版を作るときは true に置き換える
@@ -9574,6 +9574,9 @@ function hl3Fielding(ev,tr,af){
       gone.forEach(i=>tgt.push([i+1,i+2])); if(batOut) tgt.push([0,1]);
     } else { if(ev.dp) tgt.push([1,2],[0,1]); else tgt.push([0,1]); }   // 記録が足りないとき(これまでどおり)
     force=true;
+  } else if(k==="CS"||k==="steal"){   /* v2.2.p:盗塁で刺される。走者は次の塁まで走り、捕手の送球(ボール 0.9 秒)が着いた直後にアウト */
+    (k==="CS"? [[1,2]] : (ev.cso||[])).forEach(([a,b])=>{ if(!bp[b] || b>3) return; const ra=.96; F.mvOut.push([a,b,ra]); F.marks.push({x:bp[b][0],y:bp[b][1],t:.9}); F.end=Math.max(F.end,ra+.3); });
+    return F;
   } else if(k==="SH"){ tgt.push([0,1]); force=true; }
   else if(k==="FC"){ tgt.push(pn[1]? [2,3] : [1,2]); force=true; }   // バントの失敗:先の走者を封殺
   else if((k==="1B"||k==="2B"||k==="3B") && dOuts>0){   // 安打で走者が刺される(記録でアウトが増えた安打。刺されたのは塁の動きがない走者)
@@ -9641,7 +9644,7 @@ function hl3PlayScript(ev,o){
   const chase= isPc? [] : hl3Chase(ev,tr3,{pick: F.legs.length? F.legs[0].t0 : null, pos:o.fpos||null, legs:F.legs});   // v2.1.d:打球を追う野手
   const moved=new Set([...(ev.mv||[]),...F.mvOut].map(([a])=>a));
   let re=hlRunEnd(ev); if(o.extend && fld && fld.end>re) re=fld.end;   // アウトの数・点数を変えるのは、最後のアウトのあと
-  const st= ev.kind==="HR"? 1.0 : .9, per= ev.kind==="HR"? .3 : HL_PER, names=o.names||[], nm=a=> a===0? ev.batter : names[a-1];
+  const stl= /^(SB|CS|steal)$/.test(ev.kind), st= ev.kind==="HR"? 1.0 : stl? 0 : .9, per= ev.kind==="HR"? .3 : stl? .85 : HL_PER, names=o.names||[], nm=a=> a===0? ev.batter : names[a-1];   /* v2.2.p:盗塁は投球と同時に走る */
   const runners=(ev.mv||[]).map(([a,b])=>{ const t=F.arr[a+","+b]; return {a,b,name:nm(a),st,per: t? (t-st)/(b-a) : per, out:null}; })
     .concat(F.mvOut.map(([a,b,ra])=>({a,b,name:nm(a),st,per:(ra-st)/((b-a)||1),out:ra})));   // アウトになる走者(a===b は飛び出し)
   const h= !tr3? 0 : (typeof tr3.h==="number")? tr3.h : ev.kind==="HR"? 62 : ev.kind==="SF"? 52 : ev.kind==="2B"? 30 : ev.kind==="3B"? 22 : 14;
@@ -9676,6 +9679,8 @@ function hl3Chase0(ev,tr3,o){
     if(!dive){ out.push({pos, kf:[[0,f[0],f[1],0],[t0,f[0],f[1],0],[t1,to[0],to[1],0]]}); return t1; }
     const m=[f[0]+(to[0]-f[0])*.8, f[1]+(to[1]-f[1])*.8];
     out.push({pos, kf:[[0,f[0],f[1],0],[t0,f[0],f[1],0],[Math.max(t0+.04,t1-.12),m[0],m[1],0],[t1,to[0],to[1],1],[t1+.5,to[0],to[1],1],[t1+.9,to[0],to[1],0]]}); return t1; };
+  if(k==="SB"||k==="CS"||k==="steal"){   /* v2.2.p:盗塁。二塁へは遊撃手、三塁へは三塁手が入って捕手の送球を捕る(外野手は動かない) */
+    const b= k==="steal"? (((ev.cso||[])[0]||[0,2])[1]) : 2, f= b===3? "三" : b===2? "遊" : null; if(f) run(f,L,.86); return out; }
   if(k==="SH"||k==="FC"){   // v2.1.e:バント。投・捕・一・三が前へ出て、打球にいちばん近い野手が捕る。二塁手は一塁へ入る
     const cand=["投","一","三","捕"], f=cand.reduce((m,p)=> (!m || D(P(p),L)<D(P(m),L))? p : m, null);
     run(f,L,.94);
@@ -17616,10 +17621,11 @@ function mgBczZoneHtml(det){
 // v2.0.g:采配の結果の場面の動き。pre=打つ前の塁の名前、d=結果。返すのは観戦の場面と同じ形(kind・mv・runs)
 // v2.0.g:采配の結果を 2.5D で動かす(観戦の hlRenderPlay の 2.5D の部分と同じ作り。名前のカードは出さない)
 function hl3MgResultStage(box,d,pre,evLike,rLike){
-  const p=hl3MgPlay(d,pre), ev={fd:0, kind:p.kind, mv:p.mv, runs:p.runs, batter:d.batter, pitcher:d.pitcher, hp:d.hp, dp:!!d.dp, pn:p.names, po:d.po, outs:d.outs};
+  const p=hl3MgPlay(d,pre), ev={fd:0, cso:p.cso, kind:p.kind, mv:p.mv, runs:p.runs, batter:d.batter, pitcher:d.pitcher, hp:d.hp, dp:!!d.dp, pn:p.names, po:d.po, outs:d.outs};
   const bip= (p.kind==="OUT"||p.kind==="E") && typeof lastBIP!=="undefined" && lastBIP && lastBIP.pos? {type:lastBIP.type, pos:lastBIP.pos} : null;   // v2.0.j:v1 が直前に決めた打球(読むだけ)
   const seed=d.inn*7+(d.half==="裏"? 3 : 0)+((typeof d.po==="number")? d.po : 0)*11+[...String(d.batter||"")].length;   // 演出用(hlRand。試合の乱数は使わない)
-  const tr= p.kind==="steal"? null : (hlTrajectory(ev,seed) || hl3Grounder(ev,seed,bip));
+  const cs0=(p.cso||[])[0], csP= cs0? (cs0[1]===2? hlPt(90,86) : hlPt(135,60)) : null;   /* v2.2.p:刺される盗塁は捕手の送球(低い線。カメラは動かさない) */
+  const tr= p.kind==="steal"? (csP? {ex:csP[0], ey:csP[1], ang: cs0[1]===2? 90 : 135, h:8, near:true} : null) : (hlTrajectory(ev,seed) || hl3Grounder(ev,seed,bip));
   const S=hl3PlayScript(ev,{tr, af:(d.rn||[null,null,null]).map(Boolean), names:p.names, fpos:bip&&bip.pos});   // v2.1.a:動きの台本
   const cam=S.cam, c=HL3_CAMS[cam], dest=new Set(p.mv.map(([,b])=>b)), moved=S.moved;
   const g=hl3GroundHtml(S);
@@ -17637,7 +17643,8 @@ function hl3MgPlay(d,pre){
   const before=(pre||[null,null,null]).slice(0,3), after=(d.rn||[null,null,null]).slice(0,3), mv=[], used=new Set();
   if(d.from==="steal"){   // 盗塁:成功なら、いなくなった塁の走者が1つ先へ
     if(d.ok) for(let i=2;i>=0;i--){ if(!before[i]) continue; const j=after.indexOf(before[i]); if(j>i && !used.has(j)){ mv.push([i+1,j+1]); used.add(j); } }
-    return {kind:"steal", mv, runs:0, names:before};
+    const cso= d.ok? [] : [2,1,0].filter(i=> before[i] && i<2 && after.indexOf(before[i])<0).map(i=>[i+1,i+2]);   /* v2.2.p:刺された走者(本塁への盗塁は除く) */
+    return {kind:"steal", mv, runs:0, names:before, cso};
   }
   const res=d.res, hr= res==="HR";
   let left=d.scored||0;

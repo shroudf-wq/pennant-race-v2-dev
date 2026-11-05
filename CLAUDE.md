@@ -21,11 +21,11 @@
 
 | 場所 | 中身 |
 |---|---|
-| `src/pennant_source.html` | ソースの正本(**v2.2.n**。元にした v1 は **v1.8.c**。約3.5MB の1ファイル) |
+| `src/pennant_source.html` | ソースの正本(**v2.2.p**。元にした v1 は **v1.8.e**。約3.5MB の1ファイル) |
 | `docs/引き継ぎ書_v2.md` | v2 の引き継ぎ書(0章 決め事・1章 現在の状態・4章 作りの方針=2.5D のカメラ・3D の絵・守備の動き・試合画面の背景の球場(4.8)・5章 テスト・6章 版ごとの記録) |
 | `docs/同期手順_v1→v2.md` | v1 の計算部を v2 に流す手順(3者マージ)と、当てたあとの確認 |
 | `tools/sync_v1_to_v2.py` | v1 の `rep` 形式のパッチを v2 に流す道具(同期手順の A) |
-| `tests_v2xx/` | テストの道具一式と、版ごとの差分(`patch_v2xx.py`。v2.0.b〜v2.2.k・v2.2.n)・同期のスクリプト(`sync_*.py`。v2.2.l=`sync_v18b_v22l.py`・v2.2.m=`sync_v18c_v22m.py`)。v2.2.n から 3D の選手は絵の板(`hl3dBill`。引き継ぎ書 4.9。`hl3dMan` はない)。使い方は `tools/README.md` と `docs/引き継ぎ書_v2.md` の5章 |
+| `tests_v2xx/` | テストの道具一式と、版ごとの差分(`patch_v2xx.py`。v2.0.b〜v2.2.k・v2.2.n・v2.2.p)・同期のスクリプト(`sync_*.py`。v2.2.l=`sync_v18b_v22l.py`・v2.2.m=`sync_v18c_v22m.py`)。v2.2.n から 3D の選手は絵の板(`hl3dBill`。引き継ぎ書 4.9。`hl3dMan` はない)。使い方は `tools/README.md` と `docs/引き継ぎ書_v2.md` の5章 |
 | `tests_v2xx/saves/` | 互換テスト用のセーブ6本(v1.1.y で乱数を固定して作った版4。`sav_v2.py`・`hl3d_shots.py`・`hl3_overlap.py` などが読む) |
 | `vendor/three-0.128.0.min.js` | テストで使う Three.js r128 の写し(npm の `three@0.128.0`。本編は cdnjs から読む。この作業場所からは cdnjs に出られないので、テストは `HL3D_LOCAL` でこれを差し替えて読ませる) |
 | `work/` | **ここに作る**(タスクごとに1フォルダ) |
