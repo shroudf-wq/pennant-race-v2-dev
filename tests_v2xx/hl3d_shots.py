@@ -29,7 +29,7 @@ with sync_playwright() as p:
     for i in range(min(q,NMAX)):
         PT=[float(x) for x in os.environ.get("SHOT_T","1.1,2.9").split(",")]   # v2.1.c:プレーを撮る時刻(秒)。例 SHOT_T=0.5,0.9,1.3,1.8,2.9
         for stage,waits in (("pre",[900]),("play",[int(round((b-a)*1000)) for a,b in zip([0]+PT,PT)])):
-            ok=pg.evaluate("""([i,stage])=>{ hlClearTimers(); highlightIdx=i; const ev=highlightQueue[i], r=highlightGameResult;
+            ok=pg.evaluate("""([i,stage])=>{ hlClearTimers(); highlightIdx=i; const ev=highlightQueue[i], r=highlightGameResult; if(ev.kind==='pitch_change') return false;   /* v2.2.q:投手交代は球場を描かない(2D のカード)。v1.8.l〜o で試合が変わり、セーブ A の最初の場面に入った */
                 if(stage==='pre'){ if(!Array.isArray(ev.pn)) return false; hlRenderPre(r,ev); } else hlRenderPlay(r,ev); return true; }""",[i,stage])
             if not ok: continue
             tot=0

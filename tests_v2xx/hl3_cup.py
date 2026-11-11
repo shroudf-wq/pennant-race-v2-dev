@@ -2,6 +2,7 @@
 #   環境変数 HL3D_LOCAL=<three.min.js> なら 3D、なければ 2.5D(h3.py)
 #   ・世界大会:2年目の開幕前に代表選び → 大会を始める → 自分の国の試合をハイライト観戦(全場面を描く)→ 次の自分の国の試合をじっくり采配(最後まで)
 #   ・銀河杯:4年目の7/22 のあと → 自チームの試合をハイライト観戦 → 次の自チームの試合をじっくり采配
+#   v2.2.q:采配の合間の見せ場(v1.5.f)はテストの中だけ止める(HLO.mgv="off"。hl3_manage.py と同じ)。開くと試合の終わりで見せ場を流している間に次の一手を進めてしまい止まる
 #   確かめること:エラーなし・観戦の場面が描ける(球場を描く場面 st が 3D なら全部 .hl3d。投手交代などは球場を描かない)・采配の結果の場面が描ける・ホームの色と球場が取れる
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -13,7 +14,7 @@ WATCH="""()=>{ const n0=highlightQueue? highlightQueue.length : 0; playNextGameH
       if(Array.isArray(ev.pn)){ hlRenderPre(r,ev); hlClearTimers(); }
       hlRenderPlay(r,ev); if(document.querySelector('#hlSvg [class*=hl3]')) out.st++; if(document.querySelector('.hl3d')) out.d3++; if(i<highlightQueue.length-1) hlClearTimers(); } }catch(e){ out.err=String(e); }
   return out; }"""
-MANAGE="""()=>{ manageMode=true; startManagedGame(); const out={ok:!!mg, series:mg&&mg.series, res:0, d3:0, err:null};
+MANAGE="""()=>{ try{ HLO.mgv="off"; }catch(e){} manageMode=true; startManagedGame(); const out={ok:!!mg, series:mg&&mg.series, res:0, d3:0, err:null};
   try{ for(let n=0;n<600 && mg;n++){ const d=mg.dec; let ans=null; if(d.kind==="bunt") ans={bunt:false}; else if(d.kind==="steal") ans={steal:true};
       stepManaged(ans); if(mg && mg.dec.kind==="result"){ out.res++; const f=document.getElementById("mgField"); if(f && f.querySelector('.hl3d')) out.d3++; } } }catch(e){ out.err=String(e); }
   try{ closeModal(); }catch(e){} try{ closeManaged(); }catch(e){} manageMode=false; return out; }"""
