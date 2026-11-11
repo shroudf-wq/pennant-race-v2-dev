@@ -3814,7 +3814,7 @@ let practiceElsewhere=false;   // v1.4.c:ほかのタブで練習中(控えを�
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.startsWith("pennant") && !k.startsWith("pennantSave") && k!=="pennantPracticeSnap") del.push(k); }
   del.forEach(k=>localStorage.removeItem(k)); Object.entries(o).forEach(([k,v])=>localStorage.setItem(k,v)); localStorage.removeItem("pennantPracticeSnap"); try{ sessionStorage.removeItem("pennantPracticeOwner"); }catch(e){} }catch(e){} })();
 /* バージョン:公開のたびに末尾の英字を1つ進める(v1.0.a → … → v1.0.z → v1.1.a) */
-const APP_VERSION="v2.2.q"; const BASE_V1="v1.8.u";   /* v2(3D版):BASE_V1 は「元にした v1 の版」。同期するたびに上げる */
+const APP_VERSION="v2.2.r"; const BASE_V1="v1.8.v";   /* v2(3D版):BASE_V1 は「元にした v1 の版」。同期するたびに上げる */
 /* 体験版の切り替え:体験版のファイルは、この行を true にして作る(本編と同じプログラム) */
 const LITE=false, LITE_SEASONS=3;
 const DEV=false;   // v1.2.p:開発版(テスト機能がいつも出ている)。開発版を作るときは true に置き換える
@@ -31356,8 +31356,8 @@ function setGdAuto(on){ try{ tdLsSet("pennantGdAuto",on?"1":"0"); }catch(e){} gd
 function gdRenderSetting(){ const c=document.getElementById("gdAutoSetChk"); if(c) c.checked=gdAutoOn(); const r=document.getElementById("gdAutoRow"); if(r) r.style.display= gdOn()? "flex" : "none"; }
 if(typeof renderCampSetting==="function"){ const orig=renderCampSetting; renderCampSetting=function(){ const out=orig.apply(this,arguments); try{ gdRenderSetting(); }catch(e){} return out; }; }
 function gdNeedsScreen(){ const me=league[myTeam]; return !gdAutoOn() && !(gdPending && gdPending.ready) && gdElig(me).length>0 && gdOffers(null).size>=GD_TEAMS_MIN; }
-function gdOpen(){ const e=gdElig(league[myTeam]); gdUi={give:e[0]||null, wish:[]}; gdRender(); }
-function gdRender(){
+function gdOpen(){ const e=gdElig(league[myTeam]); gdUi={give:e[0]||null, wish:[]}; gdDrRender(); }
+function gdDrRender(){   /* v1.8.v:案内役の gdRender とぶつかっていたので名前を変えた */
   const me=league[myTeam], mine=gdElig(me).slice(0,GD_OFFER_N), off=gdOffers(gdUi.give), ts=gdOrder([...off.keys()],off);
   const u=p=>puid(p), line=p=>`${sigMark(p)}${esc(p.name)} <span class="small">${esc(gdPosTxt(p))}・${p.age}歳・総合${Math.round(scoreOf(p))}</span>`;
   const giveRows=mine.map(p=>`<div class="playerRow${gdUi.give===p? " tradeOn" : ""}"><span>${line(p)}</span><button class="${gdUi.give===p? "act" : "sec"}" onclick="gdSetGive(${u(p)})">${gdUi.give===p? "出す" : "こちらを出す"}</button></div>`).join("");
@@ -31372,10 +31372,10 @@ function gdRender(){
     <button class="act" style="width:100%;margin-top:8px" onclick="gdConfirm()">この内容で現役ドラフトへ</button>`);
 }
 function gdKeepScroll(f){ const box=document.querySelector("#playerModal .modalBox"), sc=box? box.scrollTop : 0; f(); const b2=document.querySelector("#playerModal .modalBox"); if(b2) b2.scrollTop=sc; }
-function gdSetGive(uid){ const p=playerByUid.get(uid); if(!p || !gdUi) return; gdUi.give=p; gdKeepScroll(gdRender); }
+function gdSetGive(uid){ const p=playerByUid.get(uid); if(!p || !gdUi) return; gdUi.give=p; gdKeepScroll(gdDrRender); }
 function gdToggleWish(uid){ const p=playerByUid.get(uid); if(!p || !gdUi) return; const i=gdUi.wish.indexOf(p);
   if(i>=0) gdUi.wish.splice(i,1); else { if(gdUi.wish.length>=GD_WISH_N){ showToast(`希望は${GD_WISH_N}人までです`); return; } gdUi.wish.push(p); }
-  gdKeepScroll(gdRender); }
+  gdKeepScroll(gdDrRender); }
 function gdConfirm(){ gdPending={ready:true, give:gdUi? gdUi.give : null, wish:gdUi? gdUi.wish.slice() : []}; gdUi=null; closeModal(); startOffseason(); }
 // オフのはじめ(秋季キャンプ・契約更改の前)に1回だけ
 if(typeof startOffseason==="function"){ const orig=startOffseason;
