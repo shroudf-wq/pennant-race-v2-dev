@@ -361,6 +361,7 @@ select{min-height:40px}
 .moreBtn{display:block;width:100%;margin-top:8px;min-height:38px;background:transparent;color:var(--gold);border:1px dashed var(--rule);border-radius:6px;cursor:pointer;font-family:inherit}
 button:disabled,button[aria-disabled="true"]{opacity:.45;cursor:not-allowed;box-shadow:none}
 .liteHide{display:none !important}
+.uniHide{display:none !important}   /* v1.8.w:新しいリーグでは選べない項目(いつも「あり」) */
 .liteBadge{display:inline-block;margin:10px auto 0;padding:3px 14px;border-radius:12px;background:var(--gold);color:var(--onGold,#111);font-weight:bold;letter-spacing:.1em}
 #actionBar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;min-height:0}
 #actionBar button{width:100%;min-height:48px;margin:0}
@@ -3101,7 +3102,7 @@ p.sqsOff[hidden]{display:none}
     <h3>ルール</h3>
     <div class="formRow"><label for="presetSel">プリセット</label>
       <select id="presetSel" onchange="applySetupPreset(this.value)"><option value="" selected>自分で決める</option><option value="simple">シンプル</option><option value="mashi">マシマシ</option><option value="std">はじめの値</option><option value="pitch">投手戦</option><option value="hit">打撃戦</option></select>
-      <p class="formHint">下の項目をまとめて切り替えます。シンプル:テンション・スキル・目玉選手・得意・フロント交代なし、ケガあり、投打バランス標準。マシマシ:テンション・スキル・目玉選手・得意・フロント交代あり、ケガなし、投打バランス打高。選んだあとで、項目を1つずつ変えることもできます。</p><p class="formHint">はじめの値:最初に出ている設定に戻します。投手戦・打撃戦:はじめの値で、投打バランスだけ投高・打高に。</p></div>
+      <p class="formHint">下の項目をまとめて切り替えます。シンプル:目玉選手・作戦・大会・演出・フロント交代なし、秋季キャンプはおまかせ、ケガあり、投打バランス標準。マシマシ:目玉選手・作戦・大会・演出・フロント交代あり、ケガなし、投打バランス打高。選んだあとで、項目を1つずつ変えることもできます。テンション・スキル・得意・特性・特色の上乗せ・守備の慣れ・成長は、いつも「あり」です。</p><p class="formHint">はじめの値:最初に出ている設定に戻します。投手戦・打撃戦:はじめの値で、投打バランスだけ投高・打高に。</p></div>
     <div class="formRow"><label for="modeSel">モード</label>
       <select id="modeSel" onchange="document.querySelectorAll('.specialOnly').forEach(r=>r.classList.toggle('hidden',this.value!=='special'));document.querySelectorAll('.notSpecial').forEach(r=>r.classList.toggle('hidden',this.value==='special'))"><option value="normal">通常</option></select>
       <p class="formHint" id="modeHint"></p></div>
@@ -3119,24 +3120,25 @@ p.sqsOff[hidden]{display:none}
     <div class="formRow"><label for="balanceSel">投打バランス</label>
       <select id="balanceSel"><option value="ultraPitch">超投高(旧仕様)</option><option value="pitch">投高</option><option value="standard" selected>標準</option><option value="hit">打高</option></select>
       <p class="formHint">標準は実際のプロ野球に近い点の入り方(1試合約3.4点)。投高・超投高は点が入りにくく、打高は乱打戦が増えます。</p></div>
-    <div class="formRow"><label for="growthSel">成長</label>
+    <div class="formRow uniHide"><label for="growthSel">成長</label>
       <select id="growthSel"><option value="new" selected>新しい</option><option value="old">従来</option></select>
       <p class="formHint">新しい:選手ごとに伸びしろがあり、1軍で試合に出ている若手もシーズン中に伸びます。ベテランの衰えはゆるやか(スター選手や殿堂入りを狙える選手はさらにゆるやか)。オフには秋季キャンプで数人を特訓できます。従来:今までどおりの成長です。</p></div>
   </section>
   <details class="formGroup setupFold"><summary><h3>遊び方(選手と試合)</h3><span class="foldSum"></span></summary><div class="foldBody">
-    <div class="formRow"><label for="tensionSel">テンション</label>
+    <p class="formHint" id="uniNote">テンション・スキル・得意・特性・特色の上乗せ・守備の慣れ・成長は、いつも「あり」です。</p>
+    <div class="formRow uniHide"><label for="tensionSel">テンション</label>
       <select id="tensionSel"><option value="on" selected>あり</option><option value="off">なし</option></select>
       <p class="formHint">打席ごとの気分の波。「なし」にすると全選手ノーマル固定で、補正や力みが起きません。</p></div>
-    <div class="formRow"><label for="skillSel">スキル</label>
+    <div class="formRow uniHide"><label for="skillSel">スキル</label>
       <select id="skillSel"><option value="on" selected>あり</option><option value="off">なし</option></select>
       <p class="formHint">選手が「チャンスに強い」「奪三振」などのスキルを持ち、その場面だけ少し力が上がります(55種類。成長で覚えます)。選手の詳細画面で見られます。「なし」にすると、スキルのない今までどおりの試合になります。</p></div>
     <div class="formRow notSpecial"><label for="uniqSel">目玉選手</label>
       <select id="uniqSel"><option value="on" selected>あり(毎年2〜3人)</option><option value="off">なし</option></select>
       <p class="formHint">名前と経歴を持つ特別な選手が、毎年のドラフトに登場します。「なし」にすると登場しません(図鑑も進みません)。</p></div>
-    <div class="formRow"><label for="forteSel">得意</label>
+    <div class="formRow uniHide"><label for="forteSel">得意</label>
       <select id="forteSel"><option value="on" selected>あり</option><option value="off">なし</option></select>
       <p class="formHint">どの選手にも「得意」が1つ付き、その能力に小さな上乗せが付きます。バランス型の球団にも特色の上乗せが付き、上乗せのなかった目玉選手にも固有スキルの上乗せが付きます。「なし」にすると、今までどおりです。</p></div>
-    <div class="formRow"><label for="traitSel">特性</label>
+    <div class="formRow uniHide"><label for="traitSel">特性</label>
       <select id="traitSel"><option value="on" selected>あり</option><option value="off">なし</option></select>
       <p class="formHint">一部の選手が、試合の外で効く「特性」(鉄人・回復が早い・スター性・地元愛)を持ちます。選手の詳細画面で見られます。「なし」にすると、今までどおりです。</p></div>
     <div class="formRow"><label for="daiSel">大車輪の投手</label>
@@ -3161,10 +3163,10 @@ p.sqsOff[hidden]{display:none}
     <div class="formRow"><label for="importSel">助っ人外国人</label>
       <select id="importSel"><option value="on" selected>あり</option><option value="off">なし</option></select>
       <p class="formHint">海外から来た助っ人が、各球団の1軍に2〜4人います(メジャー式では、日本などから来た選手)。自チームは、球団ポイントの「海外スカウト」で呼べます。来る前の力は幅でしか見えず、当たり外れがあります。「なし」にすると、助っ人のいない今までどおりのリーグです。</p><p class="formHint">自チームは0人で始まります(他球団は2〜4人)。</p></div>
-    <div class="formRow"><label for="posFitSel">守備の慣れ</label>
+    <div class="formRow uniHide"><label for="posFitSel">守備の慣れ</label>
       <select id="posFitSel"><option value="on" selected>あり</option><option value="off">なし</option></select>
       <p class="formHint">副の守備位置を守ると、慣れるまで守備力が下がります(捕手は特に大きく、盗塁を刺しにくくなり、投手の制球も落ちます)。遊撃・二塁・中堅は走力、三塁・右翼は肩も守備に効きます。他球団は本職の捕手を2人以上置きます。「なし」にすると、今までどおりです。</p></div>
-    <div class="formRow"><label for="archSel">特色の上乗せ</label>
+    <div class="formRow uniHide"><label for="archSel">特色の上乗せ</label>
       <select id="archSel"><option value="on" selected>あり</option><option value="off">なし</option></select>
       <p class="formHint">「なし」にすると、チームの特色(打撃型・投手型など)による能力の上乗せがなくなります。特色の名前と、継投・ドラフトなどの方針はそのままです。</p></div>
   </div></details>
@@ -3814,7 +3816,7 @@ let practiceElsewhere=false;   // v1.4.c:ほかのタブで練習中(控えを�
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.startsWith("pennant") && !k.startsWith("pennantSave") && k!=="pennantPracticeSnap") del.push(k); }
   del.forEach(k=>localStorage.removeItem(k)); Object.entries(o).forEach(([k,v])=>localStorage.setItem(k,v)); localStorage.removeItem("pennantPracticeSnap"); try{ sessionStorage.removeItem("pennantPracticeOwner"); }catch(e){} }catch(e){} })();
 /* バージョン:公開のたびに末尾の英字を1つ進める(v1.0.a → … → v1.0.z → v1.1.a) */
-const APP_VERSION="v2.2.r"; const BASE_V1="v1.8.v";   /* v2(3D版):BASE_V1 は「元にした v1 の版」。同期するたびに上げる */
+const APP_VERSION="v2.2.s"; const BASE_V1="v1.8.w";   /* v2(3D版):BASE_V1 は「元にした v1 の版」。同期するたびに上げる */
 /* 体験版の切り替え:体験版のファイルは、この行を true にして作る(本編と同じプログラム) */
 const LITE=false, LITE_SEASONS=3;
 const DEV=false;   // v1.2.p:開発版(テスト機能がいつも出ている)。開発版を作るときは true に置き換える
@@ -4730,7 +4732,7 @@ function startLeague(){
   { const ar=document.getElementById("archSel"); archEnabled = LITE || !ar || ar.value!=="off"; }   // v1.1.q
   farm39 = (numTeamsSetting===6 && !(typeof usRules==="function" && usRules())); setFarmCap();   // v1.1.l   // 守備の慣れ(v1.0.z)。なしなら v1.0.y と同じ
   { const im=document.getElementById("importSel"); importEnabled = !LITE && !!im && im.value==="on"; impCands=null; impEn.clear(); }   // 助っ人外国人(v1.0.y)。なしなら v1.0.x と同じ
-  { const gr=document.getElementById("growthSel"); growth2Enabled = GROWTH2_DEFAULT && !!gr && gr.value==="new"; growthNews=[]; campPending=null; }   // 成長(v1.0.t)。従来なら v1.0.s と同じ   // フロント交代(v1.0.r)。なしなら v1.0.q と同じ
+  { const gr=document.getElementById("growthSel"); growth2Enabled = GROWTH2_DEFAULT && !!gr && gr.value==="new"; growthNews=[]; campPending=null; { const ps=document.getElementById("presetSel"); campAutoLg= !!ps && ps.value==="simple"; } }   // 成長(v1.0.t)。従来なら v1.0.s と同じ。v1.8.w:シンプルなら秋季キャンプはおまかせ   // フロント交代(v1.0.r)。なしなら v1.0.q と同じ
   { const ms=document.getElementById("modeSel"); const mv= ms? ms.value : "normal"; gameMode= LITE? "easy" : (modeUnlocked(mv)? mv : "normal"); specialUniquePicks=[];   /* 体験版は「かんたん」で、最初の3シーズンで優勝を味わいやすく */
     if(gameMode==="easy") injuriesEnabled=false;   // かんたん:ケガなしで始める
     perksChosen= (gameMode==="normal"||gameMode==="easy")&&!LITE? [...document.querySelectorAll("#perkPicker input:checked")].map(c=>c.value).filter(perkUnlocked).slice(0,2) : [];
@@ -14834,7 +14836,7 @@ function markSetupChanges(){
   document.querySelectorAll("#setup details.setupFold").forEach(d=>{
     let chg=0, shown=0;
     d.querySelectorAll(".formRow").forEach(row=>{
-      const sel=row.querySelector("select"); if(!sel || row.classList.contains("liteHide") || row.classList.contains("hidden")) return;
+      const sel=row.querySelector("select"); if(!sel || row.classList.contains("liteHide") || row.classList.contains("uniHide") || row.classList.contains("hidden")) return;
       shown++; const c= sel.value!==setupRowDefault(sel); row.classList.toggle("chg",c); if(c) chg++;
     });
     const s=d.querySelector(".foldSum"); if(s) s.textContent= !shown? "" : chg? `${chg}つ変更` : "初期値のまま";
@@ -15338,7 +15340,7 @@ const MANUAL=[
   <p class="fullOnly"><b>実績</b>:「成績」タブの「実績」で確認できます。リーグをまたいで積み上がり、達成するとボーナス・モード・スタイルなどが解禁されます。テスト機能を使ったリーグでは記録されません。解禁したボーナスは、通常モードのリーグ作成時に2つまで付けられます。まだ解禁していないモード・ボーナス・スタイルは、リーグ作成の画面には出ません(スタイルの解禁の条件は、設定の「スタイル」で確認できます)。</p>
   <p class="fullOnly"><b>モード</b>:リーグ作成時に選べます。<b>かんたん</b>(初心者向け・最初から選べる)は、自チームの野手の能力に小さな補正が付き、育成も少し早く、他球団の判断は控えめ、ケガなしで始まり、球団ポイントも多めにたまります。挑戦の実績(下剋上・雑草魂・投手天国・打撃天国など)は記録されません。<b>エクストラハード</b>(ボーナスを5つすべて解禁すると解禁)は、自チームに5つのボーナス(スカウトの目:候補の将来性が分かる/育成名人:2軍・育成の成長が3割早い/人気球団:最初の人気が高くFAで選ばれやすい/交渉上手:FAの名乗りとトレードの回数が1つ増える/頑丈:ケガが3割減る)がすべて付き、他球団も強くなる最難関のモードです。<b>スペシャル</b>(エクストラハードで優勝すると解禁)は、全ボーナスに加えて、トレードの回数と期限の制限がなく、次のドラフトに出る目玉選手を設定で指定できます。リーグ作成時に、試合数(20〜200試合)と毎年の目玉選手の数(0〜6人)も自由に決められます。試合画面の「ドリームチーム戦」では、殿堂入りした歴代の名選手を中心にした「殿堂選抜」と現役の自チームが戦えます(ハイライト観戦・采配のどちらでも。本編の記録には影響しません)。スペシャルでは通常の実績は記録されず、代わりに「スペシャルモードの記録」(自チームの最高勝率や本塁打などのシーズン記録)が実績の画面に残ります。</p>
   <p class="fullOnly"><b>エクストラハードの他球団</b>:エクストラハードでは、他球団もスタメンと打順をセオリー通りに組み、月ごとに組み直します。ときどき、球団の特色に合わせた組み方(打撃重視・機動力・守備力)になります。編成画面で他球団を選ぶと、今月の組み方を確認できます。</p>
-  <p class="fullOnly"><b>プリセット</b>:リーグ作成時に、ルールの項目をまとめて切り替えられます。「シンプル」はテンション・スキル・目玉選手・得意・フロント交代なし、ケガあり、投打バランス標準。「マシマシ」はテンション・スキル・目玉選手・得意・フロント交代あり、ケガなし、投打バランス打高。選んだあとで、項目を1つずつ変えることもできます。目玉選手は「なし」にもできます(増やせるのはスペシャルモードだけです)。</p>
+  <p class="fullOnly"><b>プリセット</b>:リーグ作成時に、ルールの項目をまとめて切り替えられます。「シンプル」は目玉選手・作戦・大会・演出・フロント交代なし、秋季キャンプはおまかせ、ケガあり、投打バランス標準。「マシマシ」は目玉選手・作戦・大会・演出・フロント交代あり、ケガなし、投打バランス打高。テンション・スキル・得意・特性・特色の上乗せ・守備の慣れ・成長は、いつも「あり」です。選んだあとで、項目を1つずつ変えることもできます。目玉選手は「なし」にもできます(増やせるのはスペシャルモードだけです)。</p>
   <p class="fullOnly"><b>フロント交代</b>(リーグ作成時にあり・なしを選択。v1.0.r から):成績が振るわない他球団(前の交代から3年以上たち、勝率.460未満)は、オフにフロントが替わることがあります。替わると、球団の特色(打撃型・投手型・機動安定型・バランス型)と特色の上乗せ、継投とドラフトの方針が新しくなります。長く替わっていない球団(10年以上)も、たまに替わります。自チームは替わりません。他球団の編成画面に、最後の交代が出ます。</p>
   <p class="fullOnly"><b>殿堂選抜の書き出し</b>(スペシャルモード。v1.0.r から):ドリームチーム戦の画面から、このリーグの殿堂選抜をファイルに書き出せます。書き出したファイルは、別のリーグ(ほかの人のリーグでも)のドリームチーム戦の画面で読み込んで、自チームと戦わせられます。エキシビションなので本編の記録には影響せず、戦績は自分のリーグの殿堂選抜とは別に数えます。</p>
   <p class="fullOnly"><b>エディット</b>(スペシャル):スペシャルモードのリーグでは、設定の「エディット」で、球団の名前・カラー・特色と、選手の名前・能力(20〜100)・年齢・利き・守備位置・性格・出身・スキルを編集できます。選手は、詳細画面の「この選手を編集」からも開けます。球団名・選手名を変えると、順位・成績・表彰・殿堂などの記録も新しい名前に直ります(号外の文は当時のままです)。スキルは、数の上限や持てる条件を守ります。目玉選手・二刀流の名前と、称号(固有スキル)は変えられません。名前とカラー以外を編集したリーグでは、「スペシャルモードの記録」と図鑑の「最高成績」は更新されなくなります(保存の前に確認が出ます。元には戻せません)。試合の途中は編集できません。</p>
@@ -17928,7 +17930,7 @@ function toggleSpecialUnique(id,on){ specialUniquePicks=specialUniquePicks.filte
    シンプル=テンション・スキル・目玉選手・得意なし、ケガあり、投打バランス標準/マシマシ=テンション・スキル・目玉選手(標準)・得意あり、ケガなし、投打バランス打高。
    選んだあとで項目を1つずつ変えると、プリセットの欄は「自分で決める」に戻る。目玉選手は、通常のモードでは「あり(標準)・なし」だけ(増やせるのはスペシャル) */
 const SETUP_PRESETS={
-  simple:{tensionSel:"off",skillSel:"off",uniqSel:"off",spUniques:"0",forteSel:"off",farewellSel:"off",parkSel:"off",localSel:"off",ownSel:"off",salarySel:"off",ssSel:"off",drawFxSel:"off",rainSel:"off",daiSel:"off",legSel:"off",koshiSel:"off",tacSel:"off",cupSel:"off",worldSel:"off",traitSel:"off",retrySel:"off",frontSel:"off",growthSel:"old",importSel:"off",posFitSel:"off",injurySel:"on",balanceSel:"standard"},
+  simple:{tensionSel:"on",skillSel:"on",uniqSel:"off",spUniques:"0",forteSel:"on",farewellSel:"off",parkSel:"off",localSel:"off",ownSel:"off",salarySel:"off",ssSel:"off",drawFxSel:"off",rainSel:"off",daiSel:"off",legSel:"off",koshiSel:"off",tacSel:"off",cupSel:"off",worldSel:"off",traitSel:"on",retrySel:"off",frontSel:"off",growthSel:"new",importSel:"off",posFitSel:"on",injurySel:"on",balanceSel:"standard"},
   mashi:{tensionSel:"on",skillSel:"on",uniqSel:"on",spUniques:"",forteSel:"on",farewellSel:"on",parkSel:"on",localSel:"on",ownSel:"move",salarySel:"on",ssSel:"on",drawFxSel:"on",rainSel:"on",daiSel:"on",legSel:"on",koshiSel:"on",tacSel:"on",cupSel:"on",worldSel:"on",traitSel:"on",retrySel:"on",frontSel:"on",growthSel:"new",importSel:"on",posFitSel:"on",injurySel:"off",balanceSel:"hit"}
 };
 function applySetupPreset(k){ const P=SETUP_PRESETS[k]; if(!P) return; Object.entries(P).forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.value=v; }); if(typeof markSetupChanges==="function") markSetupChanges(); }
@@ -18614,7 +18616,7 @@ function collectState(){
     allResults, post, relegation, draft, targetGamesPerTeam, leagueBMode, scheduleB, gameDatesB, gameIdxB,
     leagueC, scheduleC, gameDatesC, gameIdxC, allResultsC, retiredBatters, retiredPitchers,
     playTier, homeLeagueSetting, upperRelDone, pendingChaosDecision, debugForceTier, tierRelegation,
-    divisionNames, allResultsB, teamStatsHistory, leagueNames, leagueFlagInfo, newsArchive, uniquesUsed, fa, awardsLog, hallOfFame, aceLog, psMvpLog, mgrEvents, mgrHof, mgrOver, vsLog, vsSince, albumLog, scenario, salaryEnabled, salLog, seasonAwardLog, seasonWrapY, csMode, balanceMode, secondGenUsed, pennantCount, injuriesEnabled, seasonTick, ikuDraft, tradesThisSeason, gameMode, specialUniquePicks, achTrack, perksChosen, specialUniqueCount, tradeOffer, clubPoints, clubFacility, clubFlags, skillsEnabled, skill2Enabled, coachEnabled, myCoaches, frontEnabled, forteEnabled, farewellEnabled, parkEnabled, daiEnabled, legEnabled, koshiEnabled, tacEnabled, cupEnabled, cup, cupLog, worldEnabled, worldLog, world, localEnabled, ownDismiss, ownFire, drawFx, rainEnabled, rainStats, notices, traitEnabled, leagueRecords, growth2Enabled, growthNews, retiredNos, noQueue, importEnabled, impCands, posFitEnabled, farm39, impBustKeep, archEnabled, impNewsQ, retryEnabled, retryPool, scoutEnabled, ssState};
+    divisionNames, allResultsB, teamStatsHistory, leagueNames, leagueFlagInfo, newsArchive, uniquesUsed, fa, awardsLog, hallOfFame, aceLog, psMvpLog, mgrEvents, mgrHof, mgrOver, vsLog, vsSince, albumLog, scenario, salaryEnabled, salLog, seasonAwardLog, seasonWrapY, csMode, balanceMode, secondGenUsed, pennantCount, injuriesEnabled, seasonTick, ikuDraft, tradesThisSeason, gameMode, specialUniquePicks, achTrack, perksChosen, specialUniqueCount, tradeOffer, clubPoints, clubFacility, clubFlags, skillsEnabled, skill2Enabled, coachEnabled, myCoaches, frontEnabled, forteEnabled, farewellEnabled, parkEnabled, daiEnabled, legEnabled, koshiEnabled, tacEnabled, cupEnabled, cup, cupLog, worldEnabled, worldLog, world, localEnabled, ownDismiss, ownFire, drawFx, rainEnabled, rainStats, notices, traitEnabled, leagueRecords, growth2Enabled, growthNews, campAutoLg, retiredNos, noQueue, importEnabled, impCands, posFitEnabled, farm39, impBustKeep, archEnabled, impNewsQ, retryEnabled, retryPool, scoutEnabled, ssState};
 }
 function applyState(st){
   const d=(v,def)=> v===undefined? def : v;
@@ -18654,7 +18656,7 @@ function applyState(st){
   skill2Enabled= skillsEnabled && st.skill2Enabled===true;
   frontEnabled= st.frontEnabled===true;
   retiredNos= Array.isArray(st.retiredNos)? st.retiredNos : []; noQueue= Array.isArray(st.noQueue)? st.noQueue : [];   // 永久欠番(v1.0.v)。それより前のセーブは、なしから
-  growth2Enabled= st.growth2Enabled===true; growthNews= Array.isArray(st.growthNews)? st.growthNews : []; campPending=null;   // 成長(v1.0.t)。それより前のセーブは「従来」のまま   // フロント交代(v1.0.r)。それより前のセーブは「なし」のまま
+  growth2Enabled= st.growth2Enabled===true; growthNews= Array.isArray(st.growthNews)? st.growthNews : []; campPending=null; campAutoLg= st.campAutoLg===true;   // 成長(v1.0.t)。それより前のセーブは「従来」のまま   // フロント交代(v1.0.r)。それより前のセーブは「なし」のまま
   coachEnabled= skill2Enabled && st.coachEnabled===true; myCoaches= (coachEnabled && Array.isArray(st.myCoaches))? st.myCoaches : [];   // v1.0.q のコーチ。v1.0.p までのセーブは「なし」のまま   // v1.0.p の新しいスキル・達人・決め球。v1.0.o までのセーブは今までのスキルのまま
   injuriesEnabled= st.injuriesEnabled!==false; seasonTick=st.seasonTick||null; ikuDraft=Object.assign({active:false,done:false,pool:[],myPicks:0}, st.ikuDraft||{});
   { const c=document.getElementById("injuryChk"); if(c) c.checked=injuriesEnabled; }
@@ -20384,8 +20386,9 @@ function g2SoonHtml(p){
 /* ---- 秋季キャンプ(段階2):オフに数人だけ特訓する ---- */
 const CAMP_MENU={bat:{bat:"打撃",def:"守備",run:"走塁",adj:"調整"}, pit:{velo:"球威",control:"制球",stamina:"スタミナ",adj:"調整"}};
 const CAMP_DESC={bat:"ミート・パワー",def:"守備力・肩力",run:"走力",adj:"31歳から:この冬の衰えを取り戻す",velo:"球速",control:"制球",stamina:"スタミナ"};
-function campAutoOn(){ return LITE || lsGet("pennantCampAuto")==="1"; }
-function setCampAuto(on){ try{ tdLsSet("pennantCampAuto",on?"1":"0"); }catch(e){} renderCampSetting(); }
+let campAutoLg=false;   /* v1.8.w:プリセット「シンプル」で作ったリーグ(セーブに入る) */
+function campAutoOn(){ return LITE || campAutoLg || lsGet("pennantCampAuto")==="1"; }
+function setCampAuto(on){ if(!on) campAutoLg=false; try{ tdLsSet("pennantCampAuto",on?"1":"0"); }catch(e){} renderCampSetting(); }
 function renderCampSetting(){ const c=document.getElementById("campAutoChk"); if(c) c.checked=campAutoOn(); const r=document.getElementById("campAutoRow"); if(r) r.style.display= (league && growth2Enabled)? "flex" : "none"; }
 function campSlots(t){ return 3+((league && t===league[myTeam])? Math.min(2,clubFacility||0) : 0); }
 function campPool(t){ return [...oneGun(t),...t.farm.bat,...t.farm.pit,...(t.ikusei||[]).map(x=>x.p)].filter(p=>!isHurt(p)); }
@@ -23871,7 +23874,7 @@ I18N.add("en",{
 I18N.add("en",{
 "フロント交代":"Front-office change",
 "成績が振るわない他球団は、フロントが替わって球団の特色(打撃型・投手型など)と方針が変わることがあります。自チームは変わりません。「なし」にすると、特色はずっと同じです。":"Other clubs that struggle may change their front office, which changes the club's style (Slugging, Pitching, etc.) and policies. Your club never changes. With \"Off\", every club keeps its style.",
-"下の項目をまとめて切り替えます。シンプル:テンション・スキル・目玉選手・得意・フロント交代なし、ケガあり、投打バランス標準。マシマシ:テンション・スキル・目玉選手・得意・フロント交代あり、ケガなし、投打バランス打高。選んだあとで、項目を1つずつ変えることもできます。":"Switches the settings below all at once. Simple: no mood, skills, phenoms, fortes, or front-office changes; injuries on; standard scoring. Loaded: mood, skills, phenoms, fortes, and front-office changes on; injuries off; hitter-friendly scoring. You can still change any setting afterward.",
+"下の項目をまとめて切り替えます。シンプル:目玉選手・作戦・大会・演出・フロント交代なし、秋季キャンプはおまかせ、ケガあり、投打バランス標準。マシマシ:目玉選手・作戦・大会・演出・フロント交代あり、ケガなし、投打バランス打高。選んだあとで、項目を1つずつ変えることもできます。テンション・スキル・得意・特性・特色の上乗せ・守備の慣れ・成長は、いつも「あり」です。":"Switches the settings below all at once. Simple: no phenoms, tactics, cups, effects, or front-office changes; fall camp is automatic; injuries on; standard scoring. Loaded: phenoms, tactics, cups, effects, and front-office changes on; injuries off; hitter-friendly scoring. You can still change any setting afterward. Mood, skills, fortes, traits, club styles, position fit, and growth are always on.",
 "選手が「チャンスに強い」「奪三振」などのスキルを持ち、その場面だけ少し力が上がります(55種類。成長で覚えます)。選手の詳細画面で見られます。「なし」にすると、スキルのない今までどおりの試合になります。":"Players have skills such as \"Clutch\" or \"Strikeout Artist\" that give a small boost only in the matching situation (55 kinds, learned as players develop). You can see them on the player detail screen. With \"Off\", games play exactly as they did before skills were added.",
 "フロント交代:あり(このリーグを作ったときの設定です)":"Front-office changes: on (set when this league was created)",
 "フロント交代:なし(新しいリーグを作るときに「あり」を選ぶと使えます。このリーグはこのまま続けられます)":"Front-office changes: off (choose \"On\" when creating a new league to use them; this league can continue as is)",
@@ -23879,7 +23882,7 @@ I18N.add("en",{
 "フロント交代:{0}年目のオフ({1}→{2})":"Front-office change: after year {0#} ({1} → {2})",
 "フロント交代:{0}年目のオフ({1}→{2})・これまで{3}回":"Front-office change: after year {0#} ({1} → {2}) · {3#} so far",
 "{0}({1}→{2})":"{0} ({1} → {2})",
-"{0}:リーグ作成時に、ルールの項目をまとめて切り替えられます。「シンプル」はテンション・スキル・目玉選手・得意・フロント交代なし、ケガあり、投打バランス標準。「マシマシ」はテンション・スキル・目玉選手・得意・フロント交代あり、ケガなし、投打バランス打高。選んだあとで、項目を1つずつ変えることもできます。目玉選手は「なし」にもできます(増やせるのはスペシャルモードだけです)。":"{0}: When creating a league, a preset switches the rule settings all at once. \"Simple\" turns off mood, skills, phenoms, fortes, and front-office changes, with injuries on and standard scoring. \"Loaded\" turns them on, with injuries off and hitter-friendly scoring. You can still change any setting afterward. Phenoms can also be set to \"None\" (only Special mode can add more).",
+"{0}:リーグ作成時に、ルールの項目をまとめて切り替えられます。「シンプル」は目玉選手・作戦・大会・演出・フロント交代なし、秋季キャンプはおまかせ、ケガあり、投打バランス標準。「マシマシ」は目玉選手・作戦・大会・演出・フロント交代あり、ケガなし、投打バランス打高。テンション・スキル・得意・特性・特色の上乗せ・守備の慣れ・成長は、いつも「あり」です。選んだあとで、項目を1つずつ変えることもできます。目玉選手は「なし」にもできます(増やせるのはスペシャルモードだけです)。":"{0}: When creating a league, a preset switches the rule settings all at once. \"Simple\" turns off phenoms, tactics, cups, effects, and front-office changes, makes fall camp automatic, and keeps injuries on with standard scoring. \"Loaded\" turns them on, with injuries off and hitter-friendly scoring. Mood, skills, fortes, traits, club styles, position fit, and growth are always on. You can still change any setting afterward. Phenoms can also be set to \"None\" (only Special mode can add more).",
 "{0}(リーグ作成時にあり・なしを選択。v1.0.r から):成績が振るわない他球団(前の交代から3年以上たち、勝率.460未満)は、オフにフロントが替わることがあります。替わると、球団の特色(打撃型・投手型・機動安定型・バランス型)と特色の上乗せ、継投とドラフトの方針が新しくなります。長く替わっていない球団(10年以上)も、たまに替わります。自チームは替わりません。他球団の編成画面に、最後の交代が出ます。":"{0} (chosen when creating a league; from v1.0.r): a struggling club (3+ years since its last change and a win rate under .460) may change its front office in the offseason. The club's style (Slugging, Pitching, Speed & Defense, Balanced) and its bonuses, bullpen policy and draft policy are all reset. Clubs that haven't changed for 10+ years occasionally change too. Your club never changes. The latest change is shown on that club's roster screen.",
 "殿堂選抜の書き出し":"Exporting the Hall of Fame team",
 "{0}(スペシャルモード。v1.0.r から):ドリームチーム戦の画面から、このリーグの殿堂選抜をファイルに書き出せます。書き出したファイルは、別のリーグ(ほかの人のリーグでも)のドリームチーム戦の画面で読み込んで、自チームと戦わせられます。エキシビションなので本編の記録には影響せず、戦績は自分のリーグの殿堂選抜とは別に数えます。":"{0} (Special mode; from v1.0.r): from the Dream Team screen you can export this league's Hall of Fame team to a file. Load that file on the Dream Team screen of another league (even someone else's) to play it against your club. It's an exhibition, so it doesn't affect your records, and its record is kept separately from your own league's Hall of Fame team.",
@@ -31409,6 +31412,7 @@ if(typeof I18N!=="undefined") I18N.add("en",{
 "次からは自動にする(おまかせで出して、おまかせで取る)":"Do this automatically from now on",
 "現役ドラフトを自動にする(オフに選ぶ画面を出さず、おまかせで行います)":"Run the active-player draft automatically (no selection screen in the offseason)"
 });
+try{ I18N.add("en",{"テンション・スキル・得意・特性・特色の上乗せ・守備の慣れ・成長は、いつも「あり」です。":"Mood, skills, fortes, traits, club styles, position fit, and growth are always on."}); }catch(e){}   /* v1.8.w */
 let csMode="champ";
 function csOn(){
   return csMode==="top3" && !proRules() && leagueFormat==="roundrobin" && (typeof playTier==="undefined" || playTier!=="chaos")
